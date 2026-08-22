@@ -1,0 +1,16 @@
+.opencode/commands/phase-1.md
+.opencode/commands/project-plan.md
+.opencode/commands/status.md
+.opencode/commands/ui-review.md
+.opencode/commands/verify.md
+00_START_HERE.md
+AGENTS.md
+ARCHITECTURE.md
+CURRENT_PHASE.md
+DECISIONS.md
+DESIGN.md
+FIRST_RUN_FALLBACK_PROMPTS.md
+OPENCODE_BEGINNER_GUIDE.md
+PRD.md
+ROADMAP.md
+PACKAGE_CONTENTS.txt
