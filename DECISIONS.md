@@ -79,3 +79,18 @@ This file records decisions that should not be casually reversed by a coding age
 **Decision:** OpenCode must not implement future roadmap phases without explicit user direction.
 
 **Reason:** Prevent AI agents from adding premature complexity and dependencies.
+
+---
+
+## D-011 — Interactive page flip moved forward for validation
+
+**Decision:** Prototype interactive two-page dragging in Phase 1.5, before SQLite
+persistence, using deterministic pages derived from the existing shared mock document.
+
+**Reason:** The tactile reading interaction is a defining product risk and should be
+validated early. This exception does not move production pagination, Tiptap, SQLite, or
+persistence forward.
+
+The third-party engine must remain isolated behind `BookFlipAdapter`, and production Book
+View work must later consume pagination output rather than treating the prototype pages or
+flip engine as document data.

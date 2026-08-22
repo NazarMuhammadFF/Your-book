@@ -1,7 +1,13 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Sparkles, Type, BookOpen, Sliders, Image as ImageIcon } from "lucide-react";
 import styles from "./CreateBookModal.module.css";
-import { Book } from "../types/book";
+import {
+  Book,
+  PageSizePreset,
+  PAGE_SIZE_PRESETS,
+  getDimensionsFromPreset,
+  getBookDimensions,
+} from "../types/book";
 import { Book as BookPreview } from "./Book";
 import { Modal } from "../../../components/ui/Modal";
 import { Button } from "../../../components/ui/Button";
@@ -15,17 +21,22 @@ import {
   CoverPattern,
 } from "../../../design/typography";
 
-export interface CreateBookModalProps {
+export interface BookSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateBook: (book: Book) => void;
+  onSaveBook: (book: Book) => void;
+  initialBook?: Book | null; // If provided, edits existing book; otherwise creates new book
 }
 
-export const CreateBookModal: React.FC<CreateBookModalProps> = ({
+export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   isOpen,
   onClose,
-  onCreateBook,
+  onSaveBook,
+  initialBook = null,
 }) => {
+  const isEditing = Boolean(initialBook);
+
+  // Book Details
   const [title, setTitle] = useState("My New Book");
   const [subtitle, setSubtitle] = useState("");
   const [authorName, setAuthorName] = useState("Author");
@@ -34,7 +45,15 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
   const [badgeText, setBadgeText] = useState("VOL. I");
 
   // Active settings tab
-  const [activeTab, setActiveTab] = useState<"cover" | "typography" | "pages">("cover");
+  const [activeTab, setActiveTab] = useState<"cover" | "pages" | "typography">("cover");
+
+  // Physical Book & Page settings
+  const [pageSizePreset, setPageSizePreset] = useState<PageSizePreset>("a5");
+  const [thickness, setThickness] = useState<number>(44);
+  const [pagesOffset, setPagesOffset] = useState<number>(5);
+  const [coverThickness, setCoverThickness] = useState<number>(3);
+  const [pageMargin, setPageMargin] = useState<"compact" | "normal" | "spacious">("normal");
+  const [showPageNumbers, setShowPageNumbers] = useState(true);
 
   // Typography settings
   const [fontFamilyId, setFontFamilyId] = useState("serif");
@@ -42,14 +61,71 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
   const [lineHeight, setLineHeight] = useState(1.68);
   const [paragraphSpacing, setParagraphSpacing] = useState(18);
 
-  // Page settings
-  const [pageMargin, setPageMargin] = useState<"compact" | "normal" | "spacious">("normal");
-  const [showPageNumbers, setShowPageNumbers] = useState(true);
+  // 3D Preview Interactive Rotation
+  const [previewRotY, setPreviewRotY] = useState<number>(-22);
+  const [previewRotX, setPreviewRotX] = useState<number>(4);
+  const isDraggingPreviewRef = useRef(false);
+  const dragStartPosRef = useRef<{ x: number; y: number; startRotY: number; startRotX: number }>({
+    x: 0,
+    y: 0,
+    startRotY: -22,
+    startRotX: 4,
+  });
+
+  // Populate state when initialBook changes or modal opens
+  useEffect(() => {
+    if (initialBook) {
+      setTitle(initialBook.title || "");
+      setSubtitle(initialBook.subtitle || "");
+      setAuthorName(initialBook.cover.authorName || "");
+      setPaletteId(initialBook.cover.paletteId || "navy");
+      setPattern(initialBook.cover.pattern || "classic-frame");
+      setBadgeText(initialBook.cover.badgeText || "");
+
+      const dims = getBookDimensions(initialBook);
+      setPageSizePreset(initialBook.pageSettings.pageSizePreset || "a5");
+      setThickness(dims.thickness || 44);
+      setPagesOffset(dims.pagesOffset || 5);
+      setCoverThickness(dims.coverThickness || 3);
+      setPageMargin(initialBook.pageSettings.pageMargin || "normal");
+      setShowPageNumbers(initialBook.pageSettings.showPageNumbers ?? true);
+
+      setFontFamilyId(initialBook.typography.fontFamilyId || "serif");
+      setFontSize(initialBook.typography.fontSize || 17);
+      setLineHeight(initialBook.typography.lineHeight || 1.68);
+      setParagraphSpacing(initialBook.typography.paragraphSpacing || 18);
+    } else {
+      setTitle("My New Book");
+      setSubtitle("");
+      setAuthorName("Author");
+      setPaletteId("navy");
+      setPattern("classic-frame");
+      setBadgeText("VOL. I");
+      setPageSizePreset("a5");
+      setThickness(44);
+      setPagesOffset(5);
+      setCoverThickness(3);
+      setPageMargin("normal");
+      setShowPageNumbers(true);
+      setFontFamilyId("serif");
+      setFontSize(17);
+      setLineHeight(1.68);
+      setParagraphSpacing(18);
+    }
+    setPreviewRotY(-22);
+    setPreviewRotX(4);
+  }, [initialBook, isOpen]);
+
+  // Derive dimensions from selected preset, thickness, pages offset, and cover thickness
+  const derivedDimensions = useMemo(
+    () => getDimensionsFromPreset(pageSizePreset, thickness, pagesOffset, coverThickness),
+    [pageSizePreset, thickness, pagesOffset, coverThickness]
+  );
 
   // Construct preview book object in real time
   const previewBook: Book = useMemo(
     () => ({
-      id: "preview",
+      id: initialBook?.id || "preview",
       title: title.trim() || "Untitled Book",
       subtitle: subtitle.trim() || undefined,
       cover: {
@@ -69,19 +145,17 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
       },
       pageSettings: {
         pageMargin,
-        pageSizePreset: "standard",
+        pageSizePreset,
+        pagesOffset,
+        coverThickness,
         showPageNumbers,
       },
-      dimensions: {
-        width: 156,
-        height: 226,
-        thickness: 26,
-        rotationDeg: 0,
-      },
-      createdAt: new Date().toISOString(),
+      dimensions: derivedDimensions,
+      createdAt: initialBook?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }),
     [
+      initialBook,
       title,
       subtitle,
       authorName,
@@ -93,23 +167,62 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
       lineHeight,
       paragraphSpacing,
       pageMargin,
+      pageSizePreset,
+      pagesOffset,
+      coverThickness,
       showPageNumbers,
+      derivedDimensions,
     ]
   );
 
-  const handleCreate = (e: React.FormEvent) => {
+  // Interactive 3D Preview Drag Rotation
+  const handlePreviewPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingPreviewRef.current = true;
+    dragStartPosRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      startRotY: previewRotY,
+      startRotX: previewRotX,
+    };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handlePreviewPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingPreviewRef.current) return;
+    const deltaX = e.clientX - dragStartPosRef.current.x;
+    const deltaY = e.clientY - dragStartPosRef.current.y;
+
+    const nextRotY = dragStartPosRef.current.startRotY + deltaX * 0.8;
+    const nextRotX = Math.max(-25, Math.min(25, dragStartPosRef.current.startRotX - deltaY * 0.4));
+
+    setPreviewRotY(nextRotY);
+    setPreviewRotX(nextRotX);
+  };
+
+  const handlePreviewPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    isDraggingPreviewRef.current = false;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    const newBook: Book = {
+    const savedBook: Book = {
       ...previewBook,
-      id: `book-${Date.now()}`,
+      id: initialBook?.id || `book-${Date.now()}`,
       dimensions: {
-        width: 148 + Math.floor(Math.random() * 8) - 4,
-        height: 212 + Math.floor(Math.random() * 12) - 6,
-        thickness: 24 + Math.floor(Math.random() * 8) - 4,
-        rotationDeg: Number((Math.random() * 2.4 - 1.2).toFixed(1)),
+        ...derivedDimensions,
+        rotationDeg: 0,
       },
     };
-    onCreateBook(newBook);
+    onSaveBook(savedBook);
     onClose();
   };
 
@@ -117,20 +230,94 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Book"
-      description="Design your cover and set default reading typography."
-      maxWidth="860px"
+      title={isEditing ? `Book Settings — ${initialBook?.title}` : "Create New Book"}
+      description={
+        isEditing
+          ? "Modify cover materials, physical proportions, and reading typography."
+          : "Design your cover and customize physical book dimensions."
+      }
+      maxWidth="880px"
     >
-      <form onSubmit={handleCreate} className={styles.formContainer}>
+      <form onSubmit={handleSave} className={styles.formContainer}>
         <div className={styles.splitLayout}>
-          {/* Left: Live Reactive Preview */}
+          {/* Left: Live Interactive 3D Preview */}
           <div className={styles.previewColumn}>
-            <div className={styles.previewStage}>
-              <BookPreview book={previewBook} isInteractive={false} scale={1.15} />
+            <div
+              className={styles.previewStage}
+              onPointerDown={handlePreviewPointerDown}
+              onPointerMove={handlePreviewPointerMove}
+              onPointerUp={handlePreviewPointerUp}
+              onPointerCancel={handlePreviewPointerUp}
+              title="Drag to rotate 3D preview"
+            >
+              <BookPreview
+                book={previewBook}
+                mode="preview"
+                isInteractive={false}
+                previewRotationY={previewRotY}
+                previewRotationX={previewRotX}
+                scale={0.92}
+              />
             </div>
-            <div className={styles.previewCaption}>
-              <Sparkles size={13} className={styles.sparkleIcon} />
-              <span>Real-time tactile preview</span>
+
+            {/* Quick Angle Presets & Drag Hint */}
+            <div className={styles.previewControls}>
+              <div className={styles.previewCaption}>
+                <Sparkles size={12} className={styles.sparkleIcon} />
+                <span>Drag preview to rotate in 3D</span>
+              </div>
+              <div className={styles.anglePills}>
+                <button
+                  type="button"
+                  className={`${styles.angleBtn} ${Math.abs(previewRotY) < 10 ? styles.angleBtnActive : ""}`}
+                  onClick={() => {
+                    setPreviewRotY(0);
+                    setPreviewRotX(0);
+                  }}
+                >
+                  Front
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.angleBtn} ${Math.abs(previewRotY - -22) < 5 ? styles.angleBtnActive : ""}`}
+                  onClick={() => {
+                    setPreviewRotY(-22);
+                    setPreviewRotX(4);
+                  }}
+                >
+                  3D View
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.angleBtn} ${Math.abs(previewRotY - -90) < 5 ? styles.angleBtnActive : ""}`}
+                  onClick={() => {
+                    setPreviewRotY(-90);
+                    setPreviewRotX(0);
+                  }}
+                >
+                  Spine
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.angleBtn} ${Math.abs(previewRotY - 90) < 5 ? styles.angleBtnActive : ""}`}
+                  onClick={() => {
+                    setPreviewRotY(90);
+                    setPreviewRotX(0);
+                  }}
+                >
+                  Pages
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.angleBtn} ${Math.abs(previewRotY - 180) < 5 || Math.abs(previewRotY - -180) < 5 ? styles.angleBtnActive : ""}`}
+                  onClick={() => {
+                    setPreviewRotY(180);
+                    setPreviewRotX(0);
+                  }}
+                >
+                  Back
+                </button>
+              </div>
             </div>
           </div>
 
@@ -144,7 +331,7 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
-                autoFocus
+                autoFocus={!isEditing}
               />
               <div className={styles.inlineFields}>
                 <Input
@@ -180,19 +367,19 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
               </button>
               <button
                 type="button"
+                className={`${styles.tabBtn} ${activeTab === "pages" ? styles.activeTab : ""}`}
+                onClick={() => setActiveTab("pages")}
+              >
+                <Sliders size={14} />
+                <span>Book & Pages</span>
+              </button>
+              <button
+                type="button"
                 className={`${styles.tabBtn} ${activeTab === "typography" ? styles.activeTab : ""}`}
                 onClick={() => setActiveTab("typography")}
               >
                 <Type size={14} />
                 <span>Typography</span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "pages" ? styles.activeTab : ""}`}
-                onClick={() => setActiveTab("pages")}
-              >
-                <Sliders size={14} />
-                <span>Page Layout</span>
               </button>
             </div>
 
@@ -241,11 +428,94 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
                     <div className={styles.disabledHeader}>
                       <ImageIcon size={14} />
                       <span>Custom Cover Image</span>
-                      <span className={styles.comingSoonTag}>Phase 4</span>
+                      <span className={styles.comingSoonTag}>Coming soon</span>
                     </div>
                     <p className={styles.disabledText}>
-                      Importing custom image files to the local asset storage will be enabled in Phase 4.
+                      Importing custom cover artwork will be available in an upcoming update.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "pages" && (
+                <div className={styles.tabContent}>
+                  {/* 1. Page Size Preset */}
+                  <Select
+                    label="Book & Page Size Preset"
+                    value={pageSizePreset}
+                    onChange={(e) => setPageSizePreset(e.target.value as PageSizePreset)}
+                    options={PAGE_SIZE_PRESETS.map((preset) => ({
+                      value: preset.id,
+                      label: `${preset.label} — ${preset.description}`,
+                    }))}
+                    helperText="Proportional width and height automatically adapt to standard paper formats."
+                  />
+
+                  {/* 2. Book Thickness */}
+                  <Slider
+                    label="Book Thickness"
+                    valueDisplay={`${thickness}px`}
+                    min={20}
+                    max={64}
+                    step={2}
+                    value={thickness}
+                    onChange={(e) => setThickness(Number(e.target.value))}
+                    helperText="Spine depth and page volume on the shelf."
+                  />
+
+                  {/* 3. Pages Offset (Cover Overhang) */}
+                  <Slider
+                    label="Pages Offset (Cover Overhang)"
+                    valueDisplay={`${pagesOffset}px`}
+                    min={2}
+                    max={10}
+                    step={1}
+                    value={pagesOffset}
+                    onChange={(e) => setPagesOffset(Number(e.target.value))}
+                    helperText="Depth of protective hardcover squares beyond the page block."
+                  />
+
+                  {/* 4. Front/Back Cover Thickness */}
+                  <Slider
+                    label="Front/Back Cover Thickness"
+                    valueDisplay={`${coverThickness}px`}
+                    min={1.5}
+                    max={8}
+                    step={0.5}
+                    value={coverThickness}
+                    onChange={(e) => setCoverThickness(Number(e.target.value))}
+                    helperText="Controls the visible hardcover board thickness for both covers."
+                  />
+
+                  {/* Page Margin Preset */}
+                  <Select
+                    label="Reading Margin Preset"
+                    value={pageMargin}
+                    onChange={(e) =>
+                      setPageMargin(e.target.value as "compact" | "normal" | "spacious")
+                    }
+                    options={[
+                      { value: "compact", label: "Compact Margins" },
+                      { value: "normal", label: "Standard Reading Margins" },
+                      { value: "spacious", label: "Generous Literary Margins" },
+                    ]}
+                  />
+
+                  {/* Page Number Toggle */}
+                  <div className={styles.toggleRow}>
+                    <label htmlFor="page-number-toggle" className={styles.toggleLabel}>
+                      <span>Display Page Numbers in Book View</span>
+                      <span className={styles.toggleSubtext}>
+                        Adds subtle left/right page indicators to spreads
+                      </span>
+                    </label>
+                    <input
+                      id="page-number-toggle"
+                      type="checkbox"
+                      checked={showPageNumbers}
+                      onChange={(e) => setShowPageNumbers(e.target.checked)}
+                      className={styles.checkbox}
+                    />
                   </div>
                 </div>
               )}
@@ -291,39 +561,6 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
                   />
                 </div>
               )}
-
-              {activeTab === "pages" && (
-                <div className={styles.tabContent}>
-                  <Select
-                    label="Page Margin Preset"
-                    value={pageMargin}
-                    onChange={(e) =>
-                      setPageMargin(e.target.value as "compact" | "normal" | "spacious")
-                    }
-                    options={[
-                      { value: "compact", label: "Compact Margins" },
-                      { value: "normal", label: "Standard Reading Margins" },
-                      { value: "spacious", label: "Generous Literary Margins" },
-                    ]}
-                  />
-
-                  <div className={styles.toggleRow}>
-                    <label htmlFor="page-number-toggle" className={styles.toggleLabel}>
-                      <span>Display Page Numbers in Book View</span>
-                      <span className={styles.toggleSubtext}>
-                        Adds subtle left/right page indicators to spreads
-                      </span>
-                    </label>
-                    <input
-                      id="page-number-toggle"
-                      type="checkbox"
-                      checked={showPageNumbers}
-                      onChange={(e) => setShowPageNumbers(e.target.checked)}
-                      className={styles.checkbox}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Modal Actions */}
@@ -332,7 +569,7 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
                 Cancel
               </Button>
               <Button variant="primary" type="submit" disabled={!title.trim()}>
-                Create & Open Book
+                {isEditing ? "Save Book Settings" : "Create & Open Book"}
               </Button>
             </div>
           </div>
@@ -341,3 +578,6 @@ export const CreateBookModal: React.FC<CreateBookModalProps> = ({
     </Modal>
   );
 };
+
+// Backwards compatibility alias
+export const CreateBookModal = BookSettingsModal;

@@ -94,6 +94,48 @@ UI should already communicate `Calm — Tactile — Playful` even though details
 
 ---
 
+# Phase 1.5 — Interactive Page-Flip Prototype
+
+**CURRENT PRODUCT-VALIDATION TARGET**
+
+Goal: validate direct, tactile page dragging in the existing mock-data Book View before
+persistence and editor work begins.
+
+### Tasks
+
+- [ ] Derive several deterministic reader pages from the shared mock document source.
+- [ ] Preserve the approved two-page physical Book View appearance.
+- [ ] Introduce a replaceable `BookFlipAdapter` boundary.
+- [ ] Integrate direct StPageFlip behind the adapter only.
+- [ ] Support corner preview, continuous drag folding, snap-back, and completed turns.
+- [ ] Support forward/backward navigation and first/final boundaries.
+- [ ] Add Previous/Next buttons and Arrow Left/Right keyboard navigation.
+- [ ] Preserve reader position across Document/Book view switches.
+- [ ] Add a reduced-motion static spread fallback.
+- [ ] Verify lifecycle cleanup under React Strict Mode and repeated remounts.
+- [ ] Update layout responsively without recreating the engine on ordinary resize.
+
+### Explicitly excluded
+
+- SQLite and persistence.
+- Tiptap and document editing.
+- Automatic or production pagination.
+- Real image import.
+- Three.js / React Three Fiber / WebGL.
+- Cloud/auth.
+
+### Acceptance criteria
+
+The user can directly drag pages forward and backward through several mock spreads, cancel
+a partial drag, use keyboard/button fallbacks, resize the desktop window, switch views
+without losing position, and repeatedly remount Book View without stale callbacks or
+obvious accumulating render work.
+
+This phase intentionally prototypes part of the original Phase 6 interaction early. Phase 6
+still owns production Book View integration with real pagination output.
+
+---
+
 # Phase 2 — Local Book Persistence
 
 Goal: books survive app restart.

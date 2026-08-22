@@ -28,6 +28,16 @@ function App() {
     setCurrentScreen("workspace");
   };
 
+  const handleUpdateBook = (updatedBook: Book) => {
+    setBooks((prev) =>
+      prev.map((b) => (b.id === updatedBook.id ? updatedBook : b))
+    );
+  };
+
+  const handleReorderBooks = (newBooks: Book[]) => {
+    setBooks(newBooks);
+  };
+
   const handleBackToLibrary = () => {
     setCurrentScreen("library");
   };
@@ -48,6 +58,8 @@ function App() {
               books={books}
               onOpenBook={handleOpenBook}
               onCreateBook={handleCreateBook}
+              onUpdateBook={handleUpdateBook}
+              onReorderBooks={handleReorderBooks}
             />
           </motion.div>
         ) : (
@@ -62,6 +74,7 @@ function App() {
             <WorkspacePage
               book={activeBook}
               onBackToLibrary={handleBackToLibrary}
+              onUpdateBook={handleUpdateBook}
             />
           </motion.div>
         )}

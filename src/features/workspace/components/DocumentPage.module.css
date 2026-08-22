@@ -1,0 +1,79 @@
+/* Standard ISO 216 A4 Sheet (210 : 297) */
+.a4PageSheet {
+  width: 100%;
+  max-width: 480px;
+  min-height: 678px;
+  aspect-ratio: 210 / 297;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  box-shadow: 
+    0 8px 24px -4px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  user-select: text;
+}
+
+/* Margins */
+.compact {
+  padding: 36px 32px 30px 32px;
+}
+
+.normal {
+  padding: 48px 40px 38px 40px;
+}
+
+.spacious {
+  padding: 58px 48px 46px 48px;
+}
+
+/* A4 Print Header Area */
+.pageHeader {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+}
+
+.headerText {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* A4 Printable Content Flow */
+.pageContentBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A4 Page Footer Area */
+.pageFooter {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 6px;
+  margin-top: 18px;
+}
+
+.pageNumber {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}

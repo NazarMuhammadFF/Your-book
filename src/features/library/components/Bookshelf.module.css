@@ -1,15 +1,19 @@
 .bookshelfContainer {
+  position: relative;
   width: 100%;
-  max-width: 1120px;
+  max-width: 1060px;
   margin: 0 auto;
-  padding: var(--space-4) var(--space-6) var(--space-12) var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-12) var(--space-6);
   box-sizing: border-box;
+  z-index: 60;
+  cursor: default;
 }
 
 .shelvesStack {
   display: flex;
   flex-direction: column;
-  gap: 56px; /* Vertical distance between stacked shelves */
+  gap: 52px; /* Generous physical vertical gap between stacked shelves */
+  transform-style: preserve-3d;
 }
 
 .shelfRow {
@@ -17,120 +21,340 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
+  border-radius: var(--radius-md);
 }
 
-/* Books row standing on the shelf plank */
+.activeTargetShelfRow {
+  background-color: rgba(var(--accent-primary-rgb, 197, 160, 89), 0.04);
+  box-shadow: 0 0 0 1px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.2), 0 8px 24px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.08);
+}
+
+.emptyShelfRow {
+  opacity: 0.85;
+}
+
+/* One shared perspective scene per shelf. Every stowed book remains in this scene so
+   transformed faces are depth-sorted together instead of as independent flat layers. */
 .booksRow {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 36px;
-  padding: 0 40px;
-  min-height: 236px;
-  z-index: 2;
-  flex-wrap: wrap;
-}
-
-.bookSlot {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  perspective: var(--shelf-perspective, 1100px);
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  z-index: 10;
 }
 
-/* Add Book Slot / Placeholder */
-.addBookSlot {
-  width: 144px;
-  height: 204px;
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  outline: none;
-  user-select: none;
+.emptyBooksRow {
+  min-height: 90px;
+}
+
+/* Drag-and-Drop Dashed Placement Guide */
+.dragPlacementGuide {
+  position: absolute;
+  bottom: 0;
+  border-radius: var(--radius-book-cover);
+  border: 2px dashed var(--accent-primary);
+  background-color: rgba(var(--accent-primary-rgb, 197, 160, 89), 0.14);
+  box-shadow: 0 0 16px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.3), inset 0 0 12px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.15);
+  pointer-events: none;
+  z-index: 10;
+  transition: left 0.16s cubic-bezier(0.16, 1, 0.3, 1), width 0.16s ease-out, height 0.16s ease-out;
+  animation: guidePulse 1.4s infinite alternate ease-in-out;
+}
+
+@keyframes guidePulse {
+  from {
+    opacity: 0.75;
+    border-color: rgba(var(--accent-primary-rgb, 197, 160, 89), 0.7);
+  }
+  to {
+    opacity: 1;
+    border-color: var(--accent-primary);
+  }
+}
+
+/* Individual Book Slot - Absolutely positioned along the shelf plank */
+.bookSlot {
+  position: absolute;
+  bottom: 0;
   display: flex;
   align-items: flex-end;
-}
-
-.addBookCard {
-  width: 100%;
-  height: 100%;
-  border-radius: var(--radius-book-cover);
-  border: 2px dashed var(--border-strong);
-  background-color: rgba(0, 0, 0, 0.02);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: var(--text-muted);
-  transition: all var(--motion-fast) var(--ease-out);
+  transform-style: preserve-3d;
+  z-index: auto;
 }
 
-.addBookSlot:hover .addBookCard {
-  border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background-color: var(--accent-subtle);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+.liftedSlot {
+  border-radius: var(--radius-book-cover);
+  outline: 2px dashed var(--accent-primary);
+  outline-offset: -2px;
+  background: rgba(var(--accent-primary-rgb, 197, 160, 89), 0.08);
 }
 
-.addBookSlot:focus-visible .addBookCard {
-  box-shadow: 0 0 0 3px var(--accent-focus);
-  border-color: var(--accent-primary);
+.liftedSlotSettling {
+  border-radius: var(--radius-book-cover);
+  outline: none;
+  background: transparent;
 }
 
-.addIcon {
-  font-size: 26px;
-  line-height: 1;
-  font-weight: 300;
+/* Temporary Drop Gap Slot opened up dynamically during drag */
+.dropGapSlot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  z-index: 10;
+  animation: gapExpand 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.addLabel {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.dropGapGhost {
+  width: 100%;
+  height: 96%;
+  border-radius: var(--radius-book-cover);
+  border: 2px dashed var(--accent-primary);
+  background: rgba(var(--accent-primary-rgb, 197, 160, 89), 0.12);
+  box-shadow: inset 0 0 12px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.2), 0 0 16px rgba(var(--accent-primary-rgb, 197, 160, 89), 0.3);
+  animation: ghostPulse 1.2s infinite alternate ease-in-out;
 }
 
-/* Physical Plank Structure */
+@keyframes gapExpand {
+  from {
+    opacity: 0;
+    transform: scaleX(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes ghostPulse {
+  from {
+    opacity: 0.65;
+    transform: scaleY(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Floating Layer for Physical Lifted Book during Drag & Drop */
+.floatingDragPortal {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform-style: preserve-3d;
+  perspective: 1100px;
+}
+
+.floatingDragBook {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  transform-origin: 0% 50% 0px;
+  filter: drop-shadow(0 26px 36px rgba(0, 0, 0, 0.54));
+  pointer-events: none;
+  will-change: transform;
+}
+
+.floatingDragBookActive {
+  cursor: grabbing;
+}
+
+.floatingDragBookSettling {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), filter 0.24s ease-out !important;
+}
+
+/* Physical Wooden Plank Structure with Consistent Static 3D Depth */
 .plankStructure {
   position: relative;
   width: 100%;
-  margin-top: -4px; /* Align with book base */
   z-index: 1;
+  pointer-events: none;
+  isolation: isolate;
 }
 
-/* Top surface of shelf */
+/* 1. Top horizontal plane extending backward into the scene beneath books */
 .plankTop {
-  width: 100%;
-  height: 14px;
-  background: var(--shelf-surface-grad, var(--shelf-surface));
-  border-top: 1px solid var(--shelf-top-highlight);
-  border-radius: 4px 4px 0 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.06);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -24px;
+  height: 24px;
+  background-color: var(--shelf-surface);
+  background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.28) 0%,
+      rgba(0, 0, 0, 0.06) 65%,
+      rgba(255, 255, 255, 0.04) 100%
+    ),
+    var(--shelf-surface);
+  clip-path: polygon(12px 0%, calc(100% - 12px) 0%, 100% 100%, 0% 100%);
+  border-bottom: 1px solid var(--shelf-top-highlight);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
 }
 
-/* Front bevel face of shelf */
+/* 2. Front vertical face (fascia) */
 .plankFace {
+  position: relative;
   width: 100%;
   height: 18px;
-  background: var(--shelf-face-grad, var(--shelf-face));
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 0 0 4px 4px;
-  box-shadow: 0 4px 10px var(--shelf-recess-shadow);
+  background-color: var(--shelf-face);
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(0, 0, 0, 0.16) 100%
+    ),
+    var(--shelf-face);
+  border-top: 1px solid var(--shelf-top-highlight);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 6px 18px var(--shelf-recess-shadow);
+  border-radius: 0 0 3px 3px;
 }
 
-/* Soft drop shadow cast below shelf onto background */
+/* 3. Left side end-cap facet */
+.plankSideLeft {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  width: 12px;
+  height: 42px;
+  clip-path: polygon(100% 0, 0 24px, 0 42px, 100% 24px);
+  background-color: var(--shelf-face);
+  filter: brightness(0.72);
+  pointer-events: none;
+}
+
+/* 4. Right side end-cap facet */
+.plankSideRight {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  width: 12px;
+  height: 42px;
+  clip-path: polygon(0 0, 100% 24px, 100% 42px, 0 24px);
+  background-color: var(--shelf-face);
+  filter: brightness(0.72);
+  pointer-events: none;
+}
+
+/* 5. Soft ambient drop shadow cast below shelf onto background */
 .plankShadow {
   position: absolute;
-  top: 100%;
-  left: 2%;
-  right: 2%;
-  height: 24px;
-  background: radial-gradient(ellipse at top, var(--shelf-recess-shadow) 0%, transparent 70%);
-  filter: blur(6px);
-  opacity: 0.6;
+  top: 18px;
+  left: 1%;
+  right: 1%;
+  height: 26px;
+  background: radial-gradient(
+    ellipse at top,
+    var(--shelf-recess-shadow) 0%,
+    transparent 75%
+  );
+  filter: blur(8px);
+  opacity: 0.8;
   pointer-events: none;
+}
+
+/* Full-screen dim & blur backdrop overlay covering the entire viewport including header */
+.fullScreenBackdrop {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(14, 12, 10, 0.38);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 50;
+  cursor: pointer;
+  animation: backdropFadeIn 0.22s ease-out;
+}
+
+/* Quiet, subtle interaction hint bar */
+.hintBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-md);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  animation: floatUpIn 0.2s var(--ease-smooth);
+}
+
+.hintDot {
+  opacity: 0.4;
+  font-size: 8px;
+}
+
+.hintSettingsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all var(--motion-fast) var(--ease-out);
+  margin-left: 6px;
+  outline: none;
+}
+
+.hintSettingsBtn:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.hintSettingsBtn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-focus);
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes floatUpIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }

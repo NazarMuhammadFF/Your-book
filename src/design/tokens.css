@@ -26,31 +26,40 @@
   --border-strong: rgba(70, 60, 50, 0.28);
 
   /* Bookshelf tactile elements */
-  --shelf-surface: #d8cebe;
-  --shelf-surface-grad: linear-gradient(180deg, #dfd6c7 0%, #cfc4b2 100%);
-  --shelf-top-highlight: rgba(255, 255, 255, 0.6);
-  --shelf-face: #b6a995;
-  --shelf-face-grad: linear-gradient(180deg, #bcae9a 0%, #9e907c 100%);
-  --shelf-recess-shadow: rgba(40, 32, 24, 0.2);
-  --shelf-wall-shadow: rgba(30, 24, 18, 0.06);
+  --shelf-perspective: 1100px;
+  --shelf-depth: 160px;
+  --book-extract-z: 90px;
+  --shelf-surface: #382c21;
+  --shelf-surface-grad: #382c21;
+  --shelf-top-highlight: rgba(255, 255, 255, 0.18);
+  --shelf-face: #241b13;
+  --shelf-face-grad: #241b13;
+  --shelf-recess-shadow: rgba(20, 14, 8, 0.4);
+  --shelf-wall-shadow: rgba(20, 14, 8, 0.15);
 
   /* Book 3D physics & tactile materials */
   --book-shadow-ambient: 0 4px 12px rgba(45, 35, 25, 0.14), 0 1px 3px rgba(45, 35, 25, 0.08);
   --book-shadow-hover: 0 16px 28px -6px rgba(45, 35, 25, 0.28), 0 8px 12px -4px rgba(45, 35, 25, 0.16);
   --book-shadow-lifted: 0 24px 38px -8px rgba(35, 25, 15, 0.32), 0 12px 18px -4px rgba(35, 25, 15, 0.2);
   
+  --spine-lighting-curve: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.35) 0%, 
+    rgba(255, 255, 255, 0.2) 18%, 
+    rgba(255, 255, 255, 0.06) 50%, 
+    rgba(0, 0, 0, 0.12) 82%, 
+    rgba(0, 0, 0, 0.4) 100%);
   --book-spine-crease: linear-gradient(90deg, 
     rgba(0, 0, 0, 0.25) 0%, 
     rgba(255, 255, 255, 0.18) 4%, 
     rgba(0, 0, 0, 0.12) 8%, 
     rgba(255, 255, 255, 0.05) 12%, 
     transparent 16%);
-  --book-edge-paper: #f4eee2;
-  --book-edge-lines: repeating-linear-gradient(180deg,
-    #eee7da 0px,
-    #eee7da 1px,
-    #dfd5c4 2px,
-    #dfd5c4 3px);
+  --book-edge-paper: #fcfbf8;
+  --book-edge-lines: repeating-linear-gradient(90deg,
+    #ffffff 0px,
+    #ffffff 1.5px,
+    #ece6da 1.5px,
+    #ece6da 2.5px);
   --book-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
 
   /* Reading view / Paper */
@@ -132,36 +141,37 @@
     --border-default: rgba(255, 255, 255, 0.12);
     --border-strong: rgba(255, 255, 255, 0.22);
 
-    --shelf-surface: #2b2620;
-    --shelf-surface-grad: linear-gradient(180deg, #322d26 0%, #25201a 100%);
-    --shelf-top-highlight: rgba(255, 255, 255, 0.12);
-    --shelf-face: #1e1a15;
-    --shelf-face-grad: linear-gradient(180deg, #24201a 0%, #171410 100%);
-    --shelf-recess-shadow: rgba(0, 0, 0, 0.55);
-    --shelf-wall-shadow: rgba(0, 0, 0, 0.35);
+    --shelf-surface: #221c17;
+    --shelf-surface-grad: #221c17;
+    --shelf-top-highlight: rgba(255, 255, 255, 0.1);
+    --shelf-face: #15110d;
+    --shelf-face-grad: #15110d;
+    --shelf-recess-shadow: rgba(0, 0, 0, 0.65);
+    --shelf-wall-shadow: rgba(0, 0, 0, 0.4);
 
     --book-shadow-ambient: 0 6px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
     --book-shadow-hover: 0 20px 32px -6px rgba(0, 0, 0, 0.55), 0 8px 14px -3px rgba(0, 0, 0, 0.4);
     --book-shadow-lifted: 0 28px 45px -8px rgba(0, 0, 0, 0.65), 0 12px 20px -4px rgba(0, 0, 0, 0.5);
 
-    --book-edge-paper: #28241f;
-    --book-edge-lines: repeating-linear-gradient(180deg,
-      #2d2923 0px,
-      #2d2923 1px,
-      #201c18 2px,
-      #201c18 3px);
+    --book-edge-paper: #f8f6f0;
+    --book-edge-lines: repeating-linear-gradient(90deg,
+      #fcfbf8 0px,
+      #fcfbf8 1.5px,
+      #ded7c6 1.5px,
+      #ded7c6 2.5px);
 
-    --paper-bg: #22201d;
-    --paper-bg-warm: #1f1d1a;
-    --paper-text: #eae4d9;
+    /* Paper tokens stay warm physical parchment even in dark ambient environments */
+    --paper-bg: #faf6eb;
+    --paper-bg-warm: #f6f1e2;
+    --paper-text: #24201b;
     --paper-gutter-shadow: linear-gradient(90deg, 
-      rgba(0, 0, 0, 0.45) 0%, 
-      rgba(0, 0, 0, 0.15) 6%, 
+      rgba(0, 0, 0, 0.22) 0%, 
+      rgba(0, 0, 0, 0.08) 6%, 
       transparent 14%);
     --paper-gutter-shadow-right: linear-gradient(270deg, 
-      rgba(0, 0, 0, 0.45) 0%, 
-      rgba(0, 0, 0, 0.15) 6%, 
+      rgba(0, 0, 0, 0.22) 0%, 
+      rgba(0, 0, 0, 0.08) 6%, 
       transparent 14%);
-    --paper-edge-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 16px 36px rgba(0, 0, 0, 0.5);
+    --paper-edge-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
   }
 }

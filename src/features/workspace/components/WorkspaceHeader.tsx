@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, FileText, BookOpen } from "lucide-react";
+import { ArrowLeft, FileText, BookOpen, Sliders } from "lucide-react";
 import styles from "./WorkspaceHeader.module.css";
 import { Book } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
@@ -12,6 +12,7 @@ export interface WorkspaceHeaderProps {
   viewMode: WorkspaceViewMode;
   onViewModeChange: (mode: WorkspaceViewMode) => void;
   onBackToLibrary: () => void;
+  onOpenSettings?: () => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -19,6 +20,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   viewMode,
   onViewModeChange,
   onBackToLibrary,
+  onOpenSettings,
 }) => {
   const palette = COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
 
@@ -72,11 +74,24 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         />
       </div>
 
-      {/* Right: Meta / Typographic Indicator */}
+      {/* Right: Book Settings & Typographic Indicator */}
       <div className={styles.rightGroup}>
         <span className={styles.typographyIndicator}>
           {book.typography.fontFamilyId.toUpperCase()} • {book.typography.fontSize}px
         </span>
+
+        {onOpenSettings && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Sliders size={14} />}
+            onClick={onOpenSettings}
+            aria-label="Book Settings"
+            style={{ marginLeft: "8px" }}
+          >
+            Settings
+          </Button>
+        )}
       </div>
     </header>
   );

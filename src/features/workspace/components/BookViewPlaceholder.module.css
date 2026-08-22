@@ -7,21 +7,44 @@
   padding: var(--space-8) var(--space-4) var(--space-12) var(--space-4);
   box-sizing: border-box;
   overflow-y: auto;
+  min-height: calc(100vh - 72px);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(94, 78, 58, 0.2), transparent 42%),
+    linear-gradient(180deg, #24211d 0%, #151311 100%);
 }
 
-/* Two-Page Book Spread Container */
+/* Outer Hardcover Casing & Ambient Shadow */
+.hardcoverBinding {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  max-width: 960px;
+  width: 100%;
+  padding: 6px 8px 8px 8px; /* Hardcover casing overhang */
+  background: var(--cover-trim-color, #283b54);
+  border-radius: 6px;
+  box-shadow: 
+    0 30px 65px -15px rgba(0, 0, 0, 0.45),
+    0 12px 28px -8px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+}
+
+/* The Open Two-Page Physical Spread */
 .bookSpread {
   display: grid;
   grid-template-columns: 1fr 1fr;
   width: 100%;
-  max-width: 920px;
   min-height: 580px;
   position: relative;
-  box-shadow: var(--paper-edge-shadow);
   border-radius: 4px;
+  overflow: hidden;
+  background-color: #f7f2e6; /* Base ivory paper tone */
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.15);
 }
 
-@media (max-width: 820px) {
+@media (max-width: 860px) {
   .bookSpread {
     grid-template-columns: 1fr;
   }
@@ -30,42 +53,42 @@
   }
   .rightPage {
     border-radius: 0 0 4px 4px;
-    border-top: 1px dashed var(--border-default);
+    border-top: 1px dashed rgba(0, 0, 0, 0.15);
   }
-  .centerGutterStitch, .leftPageStack, .rightPageStack {
+  .centerSpineGutter, .leftPageStack, .rightPageStack {
     display: none;
   }
 }
 
-/* Page Stacks Depth (Underneath open pages) */
+/* Page Stack Depth (Showing thickness of pages beneath spread) */
 .leftPageStack {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: -8px;
-  width: 8px;
-  background: var(--book-edge-paper);
-  background-image: var(--book-edge-lines);
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 6px;
+  background: #ede6d6;
+  background-image: repeating-linear-gradient(180deg, #ede6d6 0px, #ede6d6 1px, #ded5c2 2px, #ded5c2 3px);
   border-radius: 3px 0 0 3px;
-  box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.12);
+  box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.2);
 }
 
 .rightPageStack {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  right: -8px;
-  width: 8px;
-  background: var(--book-edge-paper);
-  background-image: var(--book-edge-lines);
+  top: 8px;
+  bottom: 8px;
+  right: 0;
+  width: 6px;
+  background: #ede6d6;
+  background-image: repeating-linear-gradient(180deg, #ede6d6 0px, #ede6d6 1px, #ded5c2 2px, #ded5c2 3px);
   border-radius: 0 3px 3px 0;
-  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.12);
+  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Individual Page Leaf */
+/* Individual Physical Page Leaf (Warm Ivory Paper) */
 .pageLeaf {
-  background-color: var(--paper-bg);
-  color: var(--paper-text);
+  background-color: #faf6eb; /* Warm physical paper */
+  color: #24201b; /* Deep warm charcoal ink */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -75,61 +98,112 @@
 }
 
 .leftPage {
-  border-radius: 4px 0 0 4px;
-  padding: 48px 40px 40px 52px;
+  border-radius: 3px 0 0 3px;
+  padding: 48px 42px 40px 54px;
+  background: linear-gradient(90deg, 
+    #f2ecdc 0%, 
+    #faf6ed 12%, 
+    #faf6ed 75%, 
+    #f3eddd 94%, 
+    #ded5c0 100%);
+  box-shadow: inset 2px 0 4px rgba(255, 255, 255, 0.5);
 }
 
 .rightPage {
-  border-radius: 0 4px 4px 0;
-  padding: 48px 52px 40px 40px;
+  border-radius: 0 3px 3px 0;
+  padding: 48px 54px 40px 42px;
+  background: linear-gradient(270deg, 
+    #f2ecdc 0%, 
+    #faf6ed 12%, 
+    #faf6ed 75%, 
+    #f3eddd 94%, 
+    #ded5c0 100%);
+  box-shadow: inset -2px 0 4px rgba(255, 255, 255, 0.5);
 }
 
 /* Page Margins */
 .compact {
-  padding: 36px 28px 32px 36px;
+  padding: 36px 30px 32px 38px;
 }
 
 .spacious {
-  padding: 56px 48px 48px 60px;
+  padding: 56px 50px 48px 62px;
 }
 
-/* Center Gutter Crease Shadows */
-.leftGutterShadow {
+/* Page Curvature Lighting Overlay */
+.leftPageCurveOverlay {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  width: 36px;
-  background: var(--paper-gutter-shadow);
+  inset: 0;
+  background: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.05) 0%, 
+    rgba(255, 255, 255, 0.35) 15%, 
+    transparent 60%, 
+    rgba(0, 0, 0, 0.06) 92%, 
+    rgba(0, 0, 0, 0.22) 100%);
   pointer-events: none;
+  z-index: 1;
 }
 
-.rightGutterShadow {
+.rightPageCurveOverlay {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 36px;
-  background: var(--paper-gutter-shadow-right);
+  inset: 0;
+  background: linear-gradient(270deg, 
+    rgba(0, 0, 0, 0.05) 0%, 
+    rgba(255, 255, 255, 0.35) 15%, 
+    transparent 60%, 
+    rgba(0, 0, 0, 0.06) 92%, 
+    rgba(0, 0, 0, 0.22) 100%);
   pointer-events: none;
+  z-index: 1;
 }
 
-.centerGutterStitch {
+/* Center Spine Gutter & Stitching */
+.centerSpineGutter {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 2px;
+  width: 16px;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.12);
-  z-index: 10;
+  z-index: 5;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.centerStitchLine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+
+.headbandTop {
+  width: 14px;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, #c5a059 0px, #c5a059 2px, #fff 2px, #fff 4px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  z-index: 6;
+}
+
+.headbandBottom {
+  width: 14px;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, #c5a059 0px, #c5a059 2px, #fff 2px, #fff 4px);
+  box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.4);
+  z-index: 6;
 }
 
 /* Running Header */
 .runningHeader {
+  position: relative;
+  z-index: 2;
   text-align: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(60, 45, 30, 0.12);
   padding-bottom: 8px;
   margin-bottom: 24px;
 }
@@ -137,14 +211,16 @@
 .runningTitle {
   font-family: var(--font-sans);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  opacity: 0.8;
+  color: #7d7365;
+  font-weight: 500;
 }
 
 /* Page Content */
 .pageContent {
+  position: relative;
+  z-index: 2;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -154,8 +230,8 @@
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  color: #8c8273;
   text-align: center;
   margin-bottom: 4px;
 }
@@ -163,28 +239,29 @@
 .chapterTitle {
   margin: 0;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
-  color: var(--paper-text);
+  color: #24201b;
   line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .chapterOrnament {
   text-align: center;
   font-size: 11px;
   color: var(--accent-primary);
-  opacity: 0.6;
+  opacity: 0.75;
   margin: 6px 0 16px 0;
 }
 
 .paragraph {
   margin: 0 0 12px 0;
-  text-indent: 1.5em; /* Traditional book paragraph indent */
-  color: var(--paper-text);
+  text-indent: 1.5em;
+  color: #2b2621;
 }
 
 .paragraph:first-of-type {
-  text-indent: 0; /* First paragraph in chapter has no indent */
+  text-indent: 0;
 }
 
 .blockquote {
@@ -192,7 +269,7 @@
   padding-left: 16px;
   border-left: 2px solid var(--accent-primary);
   font-style: italic;
-  opacity: 0.9;
+  color: #38322c;
 }
 
 .quoteText {
@@ -203,6 +280,7 @@
   margin: 8px 0 12px 18px;
   padding: 0;
   font-size: 13px;
+  color: #2b2621;
 }
 
 .listItem {
@@ -211,11 +289,13 @@
 
 /* Footer Page Numbers */
 .pageFooter {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  border-top: 1px solid rgba(60, 45, 30, 0.08);
 }
 
 .rightFooter {
@@ -225,17 +305,18 @@
 .pageNumber {
   font-family: var(--font-serif);
   font-size: 12px;
-  color: var(--text-muted);
+  color: #7d7365;
   font-style: italic;
 }
 
-/* Info Banner */
+/* Reading Hint Banner */
 .bookViewBanner {
   margin-top: 24px;
   font-family: var(--font-sans);
   font-size: 12px;
   color: var(--text-muted);
   background: var(--bg-surface-sunken);
-  padding: 6px 14px;
+  padding: 6px 16px;
   border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
 }

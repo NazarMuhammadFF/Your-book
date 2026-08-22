@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./DocumentViewPlaceholder.module.css";
 import { Book } from "../../books/types/book";
 import { MOCK_DOCUMENT_CONTENT, MockDocumentChapter } from "../../books/mock/mockBooks";
-import { FONT_FAMILIES } from "../../../design/typography";
+import { DocumentPage } from "./DocumentPage";
 
 export interface DocumentViewPlaceholderProps {
   book: Book;
@@ -10,43 +10,39 @@ export interface DocumentViewPlaceholderProps {
 
 export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = ({ book }) => {
   const chapters: MockDocumentChapter[] = MOCK_DOCUMENT_CONTENT.default;
-  const fontConfig =
-    FONT_FAMILIES.find((f) => f.id === book.typography.fontFamilyId) || FONT_FAMILIES[0];
+  const chapterOne = chapters[0];
+  const chapterTwo = chapters[1] || chapters[0];
 
   return (
     <div className={styles.container}>
-      <article
-        className={styles.documentSheet}
-        style={
-          {
-            fontFamily: fontConfig.fontFamily,
-            fontSize: `${book.typography.fontSize}px`,
-            lineHeight: book.typography.lineHeight,
-            textAlign: book.typography.textAlignment,
-            "--doc-p-spacing": `${book.typography.paragraphSpacing}px`,
-          } as React.CSSProperties
-        }
-      >
-        {/* Document Master Title Header */}
-        <header className={styles.docHeader}>
-          <div className={styles.docTypeTag}>Continuous Document View</div>
-          <h1 className={styles.docTitle}>{book.title}</h1>
-          {book.subtitle && <p className={styles.docSubtitle}>{book.subtitle}</p>}
-          <div className={styles.headerRule} />
-        </header>
+      {/* Centered A4 Print Workspace Spread */}
+      <div className={styles.a4WorkspaceSpread}>
+        {/* Page 1 (Left A4 Print Page) */}
+        <DocumentPage
+          pageNumber={1}
+          headerTitle={book.title}
+          typography={book.typography}
+          pageSettings={book.pageSettings}
+          className={styles.pageCard}
+        >
+          {/* Master Document Header on Page 1 */}
+          <div className={styles.docHeader}>
+            <div className={styles.docTypeTag}>Draft Document</div>
+            <h1 className={styles.docTitle}>{book.title}</h1>
+            {book.subtitle && <p className={styles.docSubtitle}>{book.subtitle}</p>}
+            <div className={styles.headerRule} />
+          </div>
 
-        {/* Chapters Content Flow */}
-        <div className={styles.contentBody}>
-          {chapters.map((ch) => (
-            <section key={ch.id} className={styles.chapterSection}>
-              {ch.chapterNumber && (
-                <div className={styles.chapterNumber}>{ch.chapterNumber}</div>
+          {/* Chapter I Content Flow */}
+          {chapterOne && (
+            <section className={styles.chapterSection}>
+              {chapterOne.chapterNumber && (
+                <div className={styles.chapterNumber}>{chapterOne.chapterNumber}</div>
               )}
-              <h2 className={styles.chapterTitle}>{ch.title}</h2>
-              {ch.subtitle && <p className={styles.chapterSubtitle}>{ch.subtitle}</p>}
+              <h2 className={styles.chapterTitle}>{chapterOne.title}</h2>
 
               <div className={styles.chapterBlocks}>
-                {ch.content.map((block, idx) => {
+                {chapterOne.content.slice(0, 3).map((block, idx) => {
                   if (block.type === "paragraph") {
                     return (
                       <p key={idx} className={styles.paragraph}>
@@ -62,32 +58,74 @@ export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = (
                       </blockquote>
                     );
                   }
-                  if (block.type === "list" && block.items) {
-                    return (
-                      <ul key={idx} className={styles.bulletList}>
-                        {block.items.map((item, itemIdx) => (
-                          <li key={itemIdx} className={styles.listItem}>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  }
                   return null;
                 })}
               </div>
             </section>
-          ))}
+          )}
+        </DocumentPage>
 
-          {/* Interactive Writing Area Placeholder Notice */}
+        {/* Page 2 (Right A4 Print Page) */}
+        <DocumentPage
+          pageNumber={2}
+          headerTitle={chapterTwo?.title || book.title}
+          typography={book.typography}
+          pageSettings={book.pageSettings}
+          className={styles.pageCard}
+        >
+          {/* Chapter II Content Flow */}
+          {chapterTwo && (
+            <section className={styles.chapterSection}>
+              {chapterTwo.chapterNumber && (
+                <div className={styles.chapterNumber}>{chapterTwo.chapterNumber}</div>
+              )}
+              <h2 className={styles.chapterTitle}>{chapterTwo.title}</h2>
+              {chapterTwo.subtitle && (
+                <p className={styles.chapterSubtitle}>{chapterTwo.subtitle}</p>
+              )}
+
+              <div className={styles.chapterBlocks}>
+                {chapterTwo.content.map((block, idx) => {
+                  if (block.type === "paragraph") {
+                    return (
+                      <p key={idx} className={styles.paragraph}>
+                        {block.text}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Structured List Blocks */}
+                {chapterOne?.content.find((b) => b.type === "list")?.items && (
+                  <ul className={styles.bulletList}>
+                    {chapterOne.content
+                      .find((b) => b.type === "list")
+                      ?.items?.map((item, itemIdx) => (
+                        <li key={itemIdx} className={styles.listItem}>
+                          {item}
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Interactive Writing Area Placeholder Prompt */}
           <div className={styles.editorPlaceholderPrompt}>
             <span className={styles.promptCursor}>|</span>
             <span className={styles.promptText}>
-              Document editor (Tiptap & SQLite persistence) will be activated in Phase 2 & 3.
+              A4 Print Layout Workspace • Ready for continuous drafting
             </span>
           </div>
-        </div>
-      </article>
+        </DocumentPage>
+      </div>
+
+      {/* Workspace Status Tag */}
+      <div className={styles.workspaceStatusBar}>
+        <span>A4 Print Layout (210 × 297 mm) • 2 Pages</span>
+      </div>
     </div>
   );
 };

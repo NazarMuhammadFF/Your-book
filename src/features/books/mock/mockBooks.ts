@@ -22,14 +22,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "normal",
-      pageSizePreset: "standard",
+      pageSizePreset: "a5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 148,
-      height: 216,
-      thickness: 26,
-      rotationDeg: -1.2,
+      width: 165,
+      height: 228,
+      thickness: 48,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-03-12T09:00:00.000Z",
     updatedAt: "2026-08-20T14:30:00.000Z",
@@ -55,14 +57,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "spacious",
-      pageSizePreset: "novel",
+      pageSizePreset: "a5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 144,
-      height: 208,
-      thickness: 22,
-      rotationDeg: 0.9,
+      width: 162,
+      height: 220,
+      thickness: 42,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-04-05T11:15:00.000Z",
     updatedAt: "2026-08-18T10:20:00.000Z",
@@ -88,14 +92,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "normal",
-      pageSizePreset: "standard",
+      pageSizePreset: "a5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 152,
-      height: 212,
-      thickness: 24,
-      rotationDeg: -0.6,
+      width: 166,
+      height: 225,
+      thickness: 44,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-05-19T16:40:00.000Z",
     updatedAt: "2026-08-21T18:05:00.000Z",
@@ -121,14 +127,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "spacious",
-      pageSizePreset: "novel",
+      pageSizePreset: "a5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 142,
-      height: 204,
-      thickness: 28,
-      rotationDeg: 1.3,
+      width: 160,
+      height: 218,
+      thickness: 52,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-06-01T08:30:00.000Z",
     updatedAt: "2026-08-15T09:45:00.000Z",
@@ -154,14 +162,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "compact",
-      pageSizePreset: "standard",
+      pageSizePreset: "b5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 156,
-      height: 220,
-      thickness: 32,
-      rotationDeg: -0.8,
+      width: 170,
+      height: 232,
+      thickness: 58,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-06-22T13:20:00.000Z",
     updatedAt: "2026-08-11T12:00:00.000Z",
@@ -187,14 +197,16 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "normal",
-      pageSizePreset: "standard",
+      pageSizePreset: "a5",
+      pagesOffset: 5,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 146,
-      height: 214,
-      thickness: 20,
-      rotationDeg: 0.7,
+      width: 164,
+      height: 222,
+      thickness: 40,
+      pagesOffset: 5,
+      rotationDeg: 0,
     },
     createdAt: "2026-07-08T10:00:00.000Z",
     updatedAt: "2026-08-04T15:20:00.000Z",
@@ -220,31 +232,35 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     pageSettings: {
       pageMargin: "normal",
-      pageSizePreset: "compact",
+      pageSizePreset: "a6",
+      pagesOffset: 4,
       showPageNumbers: true,
     },
     dimensions: {
-      width: 140,
-      height: 202,
-      thickness: 18,
-      rotationDeg: -1.4,
+      width: 158,
+      height: 215,
+      thickness: 38,
+      pagesOffset: 4,
+      rotationDeg: 0,
     },
     createdAt: "2026-07-29T07:45:00.000Z",
     updatedAt: "2026-08-22T08:10:00.000Z",
   },
 ];
 
+export interface MockDocumentBlock {
+  type: "paragraph" | "quote" | "heading" | "list";
+  text?: string;
+  items?: string[];
+  author?: string;
+}
+
 export interface MockDocumentChapter {
   id: string;
   chapterNumber?: string;
   title: string;
   subtitle?: string;
-  content: {
-    type: "paragraph" | "quote" | "heading" | "list";
-    text?: string;
-    items?: string[];
-    author?: string;
-  }[];
+  content: MockDocumentBlock[];
 }
 
 export const MOCK_DOCUMENT_CONTENT: Record<string, MockDocumentChapter[]> = {

@@ -6,15 +6,23 @@ import { WorkspaceViewMode } from "../../../types/navigation";
 import { WorkspaceHeader } from "../components/WorkspaceHeader";
 import { DocumentViewPlaceholder } from "../components/DocumentViewPlaceholder";
 import { BookViewPlaceholder } from "../components/BookViewPlaceholder";
+import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { transitions } from "../../../design/motion";
 
 export interface WorkspacePageProps {
   book: Book;
   onBackToLibrary: () => void;
+  onUpdateBook?: (book: Book) => void;
 }
 
-export const WorkspacePage: React.FC<WorkspacePageProps> = ({ book, onBackToLibrary }) => {
+export const WorkspacePage: React.FC<WorkspacePageProps> = ({
+  book,
+  onBackToLibrary,
+  onUpdateBook,
+}) => {
   const [viewMode, setViewMode] = useState<WorkspaceViewMode>("document");
+  const [readerPageIndex, setReaderPageIndex] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
     <div className={styles.workspaceContainer}>
@@ -24,6 +32,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ book, onBackToLibr
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onBackToLibrary={onBackToLibrary}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       {/* Main Workspace Stage */}
@@ -49,11 +58,28 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({ book, onBackToLibr
               exit={{ opacity: 0, scale: 0.98 }}
               transition={transitions.fast}
             >
-              <BookViewPlaceholder book={book} />
+              <BookViewPlaceholder
+                book={book}
+                pageIndex={readerPageIndex}
+                onPageIndexChange={setReaderPageIndex}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      {/* Book Settings Modal */}
+      {isSettingsOpen && (
+        <BookSettingsModal
+          isOpen={isSettingsOpen}
+          initialBook={book}
+          onClose={() => setIsSettingsOpen(false)}
+          onSaveBook={(updatedBook) => {
+            onUpdateBook?.(updatedBook);
+            setIsSettingsOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 };

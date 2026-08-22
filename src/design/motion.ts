@@ -3,6 +3,11 @@
  * Product personality: Calm — Tactile — Playful.
  */
 
+export const READER_FLIP_DURATION_MS = 560;
+export const BOOKSHELF_EXTRACT_DURATION_MS = 520;
+export const BOOKSHELF_FLIP_DURATION_MS = 420;
+export const BOOKSHELF_RETURN_DURATION_MS = 480;
+
 export const transitions = {
   // Heavy physical objects (books, shelves)
   springBook: {
@@ -46,6 +51,9 @@ export const transitions = {
   pageFade: {
     duration: 0.22,
     ease: [0.2, 0.8, 0.2, 1],
+  },
+  readerFlip: {
+    duration: READER_FLIP_DURATION_MS / 1000,
   },
 } as const;
 

@@ -1,0 +1,127 @@
+.backCover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-book-cover);
+  background: var(--cover-primary, #283b54);
+  background-image: var(--cover-grad);
+  color: var(--cover-text, #f2f7fc);
+  box-sizing: border-box;
+  padding: 24px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  user-select: none;
+  box-shadow: inset -1px 0 2px rgba(255, 255, 255, 0.15), inset 1px 0 3px rgba(0, 0, 0, 0.3);
+}
+
+.textureSheen {
+  position: absolute;
+  inset: 0;
+  background: var(--book-sheen);
+  pointer-events: none;
+}
+
+/* Spine hinge indent on the right side of the back cover */
+.spineHinge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 12px;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: -1px 0 1px rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.headerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cover-accent, #d4e2f5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  margin-bottom: 2px;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--cover-text, #f2f7fc);
+  margin: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.author {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--cover-accent, #d4e2f5);
+  opacity: 0.9;
+}
+
+.synopsisSection {
+  position: relative;
+  z-index: 1;
+  padding: 10px 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.synopsisText {
+  font-family: var(--font-serif);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--cover-text, #f2f7fc);
+  opacity: 0.88;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-style: italic;
+}
+
+.metaSection {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--cover-accent, #d4e2f5);
+  opacity: 0.8;
+}
+
+.metaLabel {
+  font-weight: 500;
+}
+
+.metaValue {
+  font-weight: 600;
+}
