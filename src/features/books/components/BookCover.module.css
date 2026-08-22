@@ -1,0 +1,234 @@
+.cover {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-book-cover);
+  background: var(--cover-grad, var(--cover-primary));
+  color: var(--cover-text);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px 18px 22px; /* Extra left padding for spine hinge */
+  user-select: none;
+}
+
+.compact {
+  padding: 12px 10px 10px 14px;
+}
+
+/* Texture & light sheen */
+.textureSheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%, rgba(0, 0, 0, 0.15) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Left spine hinge fold line */
+.spineHinge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 18px;
+  background: var(--book-spine-crease);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Content layout */
+.content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.badge {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--cover-accent);
+  opacity: 0.9;
+  border-bottom: 1px solid var(--cover-accent);
+  padding-bottom: 2px;
+}
+
+.titleSection {
+  margin: auto 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cover-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.compact .title {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 400;
+  opacity: 0.85;
+  color: var(--cover-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.authorSection {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.authorRule {
+  width: 24px;
+  height: 1px;
+  background-color: var(--cover-accent);
+  opacity: 0.7;
+}
+
+.author {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  opacity: 0.9;
+  color: var(--cover-text);
+}
+
+/* Pattern: classic-frame */
+.frameDecoration {
+  position: absolute;
+  inset: 8px 8px 8px 14px;
+  border: 1px solid var(--cover-accent);
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.innerFrame {
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--cover-accent);
+  opacity: 0.6;
+}
+
+/* Pattern: modern-geo */
+.geoDecoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.geoLineVertical {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 28px;
+  width: 1px;
+  background: var(--cover-accent);
+  opacity: 0.3;
+}
+
+.geoLineHorizontal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  height: 1px;
+  background: var(--cover-accent);
+  opacity: 0.3;
+}
+
+.geoDiamond {
+  position: absolute;
+  top: 24px;
+  right: 20px;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--cover-accent);
+  transform: rotate(45deg);
+  opacity: 0.4;
+}
+
+/* Pattern: vintage-border */
+.vintageDecoration {
+  position: absolute;
+  inset: 6px 6px 6px 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cornerTL, .cornerTR, .cornerBL, .cornerBR {
+  position: absolute;
+  font-size: 14px;
+  color: var(--cover-accent);
+  opacity: 0.7;
+  line-height: 1;
+}
+
+.cornerTL { top: 0; left: 0; }
+.cornerTR { top: 0; right: 0; }
+.cornerBL { bottom: 0; left: 0; }
+.cornerBR { bottom: 0; right: 0; }
+
+.vintageRule {
+  position: absolute;
+  bottom: 30px;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cover-accent), transparent);
+  opacity: 0.5;
+}
+
+/* Pattern: center-badge */
+.badgeDecoration {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.emblem {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--cover-accent);
+  opacity: 0.8;
+}

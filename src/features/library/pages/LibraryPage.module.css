@@ -1,0 +1,48 @@
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-canvas);
+  overflow-x: hidden;
+}
+
+.shelfViewport {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) 0 var(--space-12) 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-12) var(--space-4);
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.emptyText {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--text-secondary);
+}
+
+.resetSearchBtn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-primary);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+}
+
+.resetSearchBtn:hover {
+  color: var(--accent-hover);
+}

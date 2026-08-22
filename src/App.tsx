@@ -1,50 +1,72 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { motion, AnimatePresence } from "motion/react";
 import "./App.css";
+import { Book } from "./features/books/types/book";
+import { INITIAL_MOCK_BOOKS } from "./features/books/mock/mockBooks";
+import { AppScreen } from "./types/navigation";
+import { LibraryPage } from "./features/library/pages/LibraryPage";
+import { WorkspacePage } from "./features/workspace/pages/WorkspacePage";
+import { transitions } from "./design/motion";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  // Session in-memory books state
+  const [books, setBooks] = useState<Book[]>(INITIAL_MOCK_BOOKS);
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>("library");
+  const [activeBookId, setActiveBookId] = useState<string | null>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  // Find active book when in workspace
+  const activeBook = books.find((b) => b.id === activeBookId) || books[0];
+
+  const handleOpenBook = (book: Book) => {
+    setActiveBookId(book.id);
+    setCurrentScreen("workspace");
+  };
+
+  const handleCreateBook = (newBook: Book) => {
+    setBooks((prev) => [newBook, ...prev]);
+    setActiveBookId(newBook.id);
+    setCurrentScreen("workspace");
+  };
+
+  const handleBackToLibrary = () => {
+    setCurrentScreen("library");
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+    <div className="app-root">
+      <AnimatePresence mode="wait">
+        {currentScreen === "library" ? (
+          <motion.div
+            key="screen-library"
+            className="screen-container"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transitions.pageFade}
+          >
+            <LibraryPage
+              books={books}
+              onOpenBook={handleOpenBook}
+              onCreateBook={handleCreateBook}
+            />
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`screen-workspace-${activeBook.id}`}
+            className="screen-container"
+            initial={{ opacity: 0, scale: 0.99 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.99 }}
+            transition={transitions.pageFade}
+          >
+            <WorkspacePage
+              book={activeBook}
+              onBackToLibrary={handleBackToLibrary}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 

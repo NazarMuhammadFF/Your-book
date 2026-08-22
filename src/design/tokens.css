@@ -1,0 +1,167 @@
+:root {
+  /* Ambient canvas & surfaces */
+  --bg-canvas: #f6f3ee;
+  --bg-canvas-subtle: #ede8e0;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-surface-sunken: #e8e3da;
+  --bg-surface-glass: rgba(255, 255, 255, 0.85);
+
+  /* Text & content hierarchy */
+  --text-primary: #22201d;
+  --text-secondary: #5c574f;
+  --text-muted: #8c857b;
+  --text-inverted: #fdfbf7;
+
+  /* Accent & interactive */
+  --accent-primary: #8b5e3c;
+  --accent-hover: #734c2e;
+  --accent-active: #5c3b21;
+  --accent-subtle: #f0e6dc;
+  --accent-focus: rgba(139, 94, 60, 0.4);
+
+  /* Borders & dividing lines */
+  --border-subtle: rgba(70, 60, 50, 0.08);
+  --border-default: rgba(70, 60, 50, 0.15);
+  --border-strong: rgba(70, 60, 50, 0.28);
+
+  /* Bookshelf tactile elements */
+  --shelf-surface: #d8cebe;
+  --shelf-surface-grad: linear-gradient(180deg, #dfd6c7 0%, #cfc4b2 100%);
+  --shelf-top-highlight: rgba(255, 255, 255, 0.6);
+  --shelf-face: #b6a995;
+  --shelf-face-grad: linear-gradient(180deg, #bcae9a 0%, #9e907c 100%);
+  --shelf-recess-shadow: rgba(40, 32, 24, 0.2);
+  --shelf-wall-shadow: rgba(30, 24, 18, 0.06);
+
+  /* Book 3D physics & tactile materials */
+  --book-shadow-ambient: 0 4px 12px rgba(45, 35, 25, 0.14), 0 1px 3px rgba(45, 35, 25, 0.08);
+  --book-shadow-hover: 0 16px 28px -6px rgba(45, 35, 25, 0.28), 0 8px 12px -4px rgba(45, 35, 25, 0.16);
+  --book-shadow-lifted: 0 24px 38px -8px rgba(35, 25, 15, 0.32), 0 12px 18px -4px rgba(35, 25, 15, 0.2);
+  
+  --book-spine-crease: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.25) 0%, 
+    rgba(255, 255, 255, 0.18) 4%, 
+    rgba(0, 0, 0, 0.12) 8%, 
+    rgba(255, 255, 255, 0.05) 12%, 
+    transparent 16%);
+  --book-edge-paper: #f4eee2;
+  --book-edge-lines: repeating-linear-gradient(180deg,
+    #eee7da 0px,
+    #eee7da 1px,
+    #dfd5c4 2px,
+    #dfd5c4 3px);
+  --book-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 60%);
+
+  /* Reading view / Paper */
+  --paper-bg: #fbf9f4;
+  --paper-bg-warm: #f7f3eb;
+  --paper-text: #2a2723;
+  --paper-gutter-shadow: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.14) 0%, 
+    rgba(0, 0, 0, 0.05) 6%, 
+    transparent 14%);
+  --paper-gutter-shadow-right: linear-gradient(270deg, 
+    rgba(0, 0, 0, 0.14) 0%, 
+    rgba(0, 0, 0, 0.05) 6%, 
+    transparent 14%);
+  --paper-edge-shadow: 0 2px 8px rgba(30, 25, 20, 0.08), 0 12px 28px rgba(30, 25, 20, 0.12);
+
+  /* Typography Stacks */
+  --font-serif: "Merriweather", "Charter", "Georgia", "Cambria", "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+
+  /* Spacing Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Corner Radii */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+  --radius-book-cover: 3px 8px 8px 3px;
+
+  /* Standard Elevations */
+  --shadow-sm: 0 1px 2px rgba(30, 25, 20, 0.05);
+  --shadow-md: 0 4px 10px rgba(30, 25, 20, 0.08), 0 1px 3px rgba(30, 25, 20, 0.04);
+  --shadow-lg: 0 10px 24px rgba(30, 25, 20, 0.12), 0 2px 6px rgba(30, 25, 20, 0.06);
+  --shadow-xl: 0 20px 38px rgba(30, 25, 20, 0.16), 0 4px 10px rgba(30, 25, 20, 0.08);
+  --shadow-modal: 0 24px 48px -12px rgba(25, 20, 15, 0.28), 0 8px 16px rgba(25, 20, 15, 0.12);
+
+  /* Motion Timings */
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 400ms;
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Dark calm evening mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-canvas: #171614;
+    --bg-canvas-subtle: #1e1c19;
+    --bg-surface: #22201c;
+    --bg-surface-elevated: #2a2723;
+    --bg-surface-sunken: #141311;
+    --bg-surface-glass: rgba(34, 32, 28, 0.88);
+
+    --text-primary: #ede8e0;
+    --text-secondary: #aba396;
+    --text-muted: #756e63;
+    --text-inverted: #171614;
+
+    --accent-primary: #d49f6a;
+    --accent-hover: #e0b07e;
+    --accent-active: #c58f58;
+    --accent-subtle: #2d241c;
+    --accent-focus: rgba(212, 159, 106, 0.4);
+
+    --border-subtle: rgba(255, 255, 255, 0.06);
+    --border-default: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+
+    --shelf-surface: #2b2620;
+    --shelf-surface-grad: linear-gradient(180deg, #322d26 0%, #25201a 100%);
+    --shelf-top-highlight: rgba(255, 255, 255, 0.12);
+    --shelf-face: #1e1a15;
+    --shelf-face-grad: linear-gradient(180deg, #24201a 0%, #171410 100%);
+    --shelf-recess-shadow: rgba(0, 0, 0, 0.55);
+    --shelf-wall-shadow: rgba(0, 0, 0, 0.35);
+
+    --book-shadow-ambient: 0 6px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --book-shadow-hover: 0 20px 32px -6px rgba(0, 0, 0, 0.55), 0 8px 14px -3px rgba(0, 0, 0, 0.4);
+    --book-shadow-lifted: 0 28px 45px -8px rgba(0, 0, 0, 0.65), 0 12px 20px -4px rgba(0, 0, 0, 0.5);
+
+    --book-edge-paper: #28241f;
+    --book-edge-lines: repeating-linear-gradient(180deg,
+      #2d2923 0px,
+      #2d2923 1px,
+      #201c18 2px,
+      #201c18 3px);
+
+    --paper-bg: #22201d;
+    --paper-bg-warm: #1f1d1a;
+    --paper-text: #eae4d9;
+    --paper-gutter-shadow: linear-gradient(90deg, 
+      rgba(0, 0, 0, 0.45) 0%, 
+      rgba(0, 0, 0, 0.15) 6%, 
+      transparent 14%);
+    --paper-gutter-shadow-right: linear-gradient(270deg, 
+      rgba(0, 0, 0, 0.45) 0%, 
+      rgba(0, 0, 0, 0.15) 6%, 
+      transparent 14%);
+    --paper-edge-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 16px 36px rgba(0, 0, 0, 0.5);
+  }
+}

@@ -1,0 +1,241 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--space-8) var(--space-4) var(--space-12) var(--space-4);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* Two-Page Book Spread Container */
+.bookSpread {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  max-width: 920px;
+  min-height: 580px;
+  position: relative;
+  box-shadow: var(--paper-edge-shadow);
+  border-radius: 4px;
+}
+
+@media (max-width: 820px) {
+  .bookSpread {
+    grid-template-columns: 1fr;
+  }
+  .leftPage {
+    border-radius: 4px 4px 0 0;
+  }
+  .rightPage {
+    border-radius: 0 0 4px 4px;
+    border-top: 1px dashed var(--border-default);
+  }
+  .centerGutterStitch, .leftPageStack, .rightPageStack {
+    display: none;
+  }
+}
+
+/* Page Stacks Depth (Underneath open pages) */
+.leftPageStack {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: -8px;
+  width: 8px;
+  background: var(--book-edge-paper);
+  background-image: var(--book-edge-lines);
+  border-radius: 3px 0 0 3px;
+  box-shadow: inset 1px 0 2px rgba(0, 0, 0, 0.12);
+}
+
+.rightPageStack {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  right: -8px;
+  width: 8px;
+  background: var(--book-edge-paper);
+  background-image: var(--book-edge-lines);
+  border-radius: 0 3px 3px 0;
+  box-shadow: inset -1px 0 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Individual Page Leaf */
+.pageLeaf {
+  background-color: var(--paper-bg);
+  color: var(--paper-text);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.leftPage {
+  border-radius: 4px 0 0 4px;
+  padding: 48px 40px 40px 52px;
+}
+
+.rightPage {
+  border-radius: 0 4px 4px 0;
+  padding: 48px 52px 40px 40px;
+}
+
+/* Page Margins */
+.compact {
+  padding: 36px 28px 32px 36px;
+}
+
+.spacious {
+  padding: 56px 48px 48px 60px;
+}
+
+/* Center Gutter Crease Shadows */
+.leftGutterShadow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 36px;
+  background: var(--paper-gutter-shadow);
+  pointer-events: none;
+}
+
+.rightGutterShadow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 36px;
+  background: var(--paper-gutter-shadow-right);
+  pointer-events: none;
+}
+
+.centerGutterStitch {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  pointer-events: none;
+}
+
+/* Running Header */
+.runningHeader {
+  text-align: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+}
+
+.runningTitle {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* Page Content */
+.pageContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chapterNumber {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.chapterTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--paper-text);
+  line-height: 1.25;
+}
+
+.chapterOrnament {
+  text-align: center;
+  font-size: 11px;
+  color: var(--accent-primary);
+  opacity: 0.6;
+  margin: 6px 0 16px 0;
+}
+
+.paragraph {
+  margin: 0 0 12px 0;
+  text-indent: 1.5em; /* Traditional book paragraph indent */
+  color: var(--paper-text);
+}
+
+.paragraph:first-of-type {
+  text-indent: 0; /* First paragraph in chapter has no indent */
+}
+
+.blockquote {
+  margin: 12px 0 16px 0;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent-primary);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.quoteText {
+  margin: 0;
+}
+
+.bulletList {
+  margin: 8px 0 12px 18px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.listItem {
+  margin-bottom: 4px;
+}
+
+/* Footer Page Numbers */
+.pageFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.rightFooter {
+  justify-content: flex-end;
+}
+
+.pageNumber {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Info Banner */
+.bookViewBanner {
+  margin-top: 24px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-surface-sunken);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+}

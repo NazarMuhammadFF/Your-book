@@ -1,0 +1,136 @@
+.bookshelfContainer {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-6) var(--space-12) var(--space-6);
+  box-sizing: border-box;
+}
+
+.shelvesStack {
+  display: flex;
+  flex-direction: column;
+  gap: 56px; /* Vertical distance between stacked shelves */
+}
+
+.shelfRow {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Books row standing on the shelf plank */
+.booksRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 36px;
+  padding: 0 40px;
+  min-height: 236px;
+  z-index: 2;
+  flex-wrap: wrap;
+}
+
+.bookSlot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+/* Add Book Slot / Placeholder */
+.addBookSlot {
+  width: 144px;
+  height: 204px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  display: flex;
+  align-items: flex-end;
+}
+
+.addBookCard {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-book-cover);
+  border: 2px dashed var(--border-strong);
+  background-color: rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  transition: all var(--motion-fast) var(--ease-out);
+}
+
+.addBookSlot:hover .addBookCard {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background-color: var(--accent-subtle);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.addBookSlot:focus-visible .addBookCard {
+  box-shadow: 0 0 0 3px var(--accent-focus);
+  border-color: var(--accent-primary);
+}
+
+.addIcon {
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 300;
+}
+
+.addLabel {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Physical Plank Structure */
+.plankStructure {
+  position: relative;
+  width: 100%;
+  margin-top: -4px; /* Align with book base */
+  z-index: 1;
+}
+
+/* Top surface of shelf */
+.plankTop {
+  width: 100%;
+  height: 14px;
+  background: var(--shelf-surface-grad, var(--shelf-surface));
+  border-top: 1px solid var(--shelf-top-highlight);
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Front bevel face of shelf */
+.plankFace {
+  width: 100%;
+  height: 18px;
+  background: var(--shelf-face-grad, var(--shelf-face));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 10px var(--shelf-recess-shadow);
+}
+
+/* Soft drop shadow cast below shelf onto background */
+.plankShadow {
+  position: absolute;
+  top: 100%;
+  left: 2%;
+  right: 2%;
+  height: 24px;
+  background: radial-gradient(ellipse at top, var(--shelf-recess-shadow) 0%, transparent 70%);
+  filter: blur(6px);
+  opacity: 0.6;
+  pointer-events: none;
+}
