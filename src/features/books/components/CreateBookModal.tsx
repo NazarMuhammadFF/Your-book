@@ -20,6 +20,7 @@ import {
   FONT_FAMILIES,
   CoverPattern,
 } from "../../../design/typography";
+import { createEmptyDocumentContent } from "../../document/utils/initialContent";
 
 export interface BookSettingsModalProps {
   isOpen: boolean;
@@ -217,6 +218,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
     const savedBook: Book = {
       ...previewBook,
       id: initialBook?.id || `book-${Date.now()}`,
+      content: initialBook?.content || createEmptyDocumentContent(),
       dimensions: {
         ...derivedDimensions,
         rotationDeg: 0,

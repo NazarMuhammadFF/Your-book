@@ -12,5 +12,7 @@ export interface BookFlipMountOptions {
   host: HTMLElement;
   pageElements: HTMLElement[];
   initialPageIndex: number;
+  pageWidth?: number;
+  pageHeight?: number;
   onSnapshotChange: (snapshot: BookFlipSnapshot) => void;
 }

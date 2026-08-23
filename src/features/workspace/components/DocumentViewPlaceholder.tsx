@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styles from "./DocumentViewPlaceholder.module.css";
-import { Book } from "../../books/types/book";
+import { Book, getBookPageMetrics } from "../../books/types/book";
 import { MOCK_DOCUMENT_CONTENT, MockDocumentChapter } from "../../books/mock/mockBooks";
 import { DocumentPage } from "./DocumentPage";
 
@@ -12,17 +12,24 @@ export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = (
   const chapters: MockDocumentChapter[] = MOCK_DOCUMENT_CONTENT.default;
   const chapterOne = chapters[0];
   const chapterTwo = chapters[1] || chapters[0];
+  const pageMetrics = useMemo(() => getBookPageMetrics(book), [book]);
 
   return (
     <div className={styles.container}>
-      {/* Centered A4 Print Workspace Spread */}
-      <div className={styles.a4WorkspaceSpread}>
-        {/* Page 1 (Left A4 Print Page) */}
+      {/* Centered Document Print Workspace Spread */}
+      <div
+        className={styles.workspaceSpread}
+        style={{
+          maxWidth: `${pageMetrics.spreadWidth + 48}px`,
+        }}
+      >
+        {/* Page 1 (Left Print Page) */}
         <DocumentPage
           pageNumber={1}
           headerTitle={book.title}
           typography={book.typography}
           pageSettings={book.pageSettings}
+          pageMetrics={pageMetrics}
           className={styles.pageCard}
         >
           {/* Master Document Header on Page 1 */}
@@ -65,12 +72,13 @@ export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = (
           )}
         </DocumentPage>
 
-        {/* Page 2 (Right A4 Print Page) */}
+        {/* Page 2 (Right Print Page) */}
         <DocumentPage
           pageNumber={2}
           headerTitle={chapterTwo?.title || book.title}
           typography={book.typography}
           pageSettings={book.pageSettings}
+          pageMetrics={pageMetrics}
           className={styles.pageCard}
         >
           {/* Chapter II Content Flow */}
@@ -116,7 +124,7 @@ export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = (
           <div className={styles.editorPlaceholderPrompt}>
             <span className={styles.promptCursor}>|</span>
             <span className={styles.promptText}>
-              A4 Print Layout Workspace • Ready for continuous drafting
+              {pageMetrics.presetLabel} Layout Workspace • Ready for continuous drafting
             </span>
           </div>
         </DocumentPage>
@@ -124,7 +132,7 @@ export const DocumentViewPlaceholder: React.FC<DocumentViewPlaceholderProps> = (
 
       {/* Workspace Status Tag */}
       <div className={styles.workspaceStatusBar}>
-        <span>A4 Print Layout (210 × 297 mm) • 2 Pages</span>
+        <span>{pageMetrics.presetLabel} ({pageMetrics.width} × {pageMetrics.height} mm) • 2 Pages</span>
       </div>
     </div>
   );

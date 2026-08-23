@@ -1,0 +1,158 @@
+/* Shared Paper Canvas for Document View and Book View */
+.pageCanvas {
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: var(--paper-bg, #fbf9f4);
+  color: var(--paper-text, #2a2723);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  box-shadow:
+    0 10px 28px -4px rgba(35, 25, 15, 0.09),
+    0 2px 6px rgba(35, 25, 15, 0.04);
+  overflow: hidden;
+  user-select: text;
+  cursor: text;
+  isolation: isolate;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pageCanvas:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-subtle));
+}
+
+.activeCanvas {
+  border-color: var(--accent-primary);
+  box-shadow:
+    0 14px 36px -4px rgba(35, 25, 15, 0.14),
+    0 0 0 1px var(--accent-primary);
+}
+
+/* Book View Dual-Page Spines */
+.leftPage {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--paper-bg, #fbf9f4) 86%, #dcd4c3) 0%, var(--paper-bg, #fbf9f4) 14%, var(--paper-bg, #fbf9f4) 84%, color-mix(in srgb, var(--paper-bg, #fbf9f4) 92%, #dcd4c3) 100%);
+  border-right: 1px solid rgba(70, 55, 40, 0.08);
+}
+
+.rightPage {
+  background: linear-gradient(270deg, color-mix(in srgb, var(--paper-bg, #fbf9f4) 86%, #dcd4c3) 0%, var(--paper-bg, #fbf9f4) 14%, var(--paper-bg, #fbf9f4) 84%, color-mix(in srgb, var(--paper-bg, #fbf9f4) 92%, #dcd4c3) 100%);
+}
+
+.gutterShadowLeft {
+  box-shadow: inset -10px 0 16px -8px rgba(30, 20, 10, 0.14);
+}
+
+.gutterShadowRight {
+  box-shadow: inset 10px 0 16px -8px rgba(30, 20, 10, 0.14);
+}
+
+/* Tactile paper light sheen overlay */
+.paperLight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 45% 20%, rgba(255, 255, 255, 0.35), transparent 48%),
+    repeating-linear-gradient(0deg, transparent 0 7px, rgba(70, 50, 30, 0.01) 8px);
+}
+
+/* Margins */
+.compact {
+  padding: 30px 28px 26px 28px;
+}
+
+.normal {
+  padding: 40px 36px 32px 36px;
+}
+
+.spacious {
+  padding: 50px 44px 40px 44px;
+}
+
+/* Running Header */
+.pageHeader {
+  position: relative;
+  z-index: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+
+.headerText {
+  font-family: var(--font-sans);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+/* Content Body */
+.pageContent {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pageContent:global(.booknote-prose) {
+  color: var(--paper-text, #2a2723);
+}
+
+.pageContent:global(.booknote-prose) h1,
+.pageContent:global(.booknote-prose) h2,
+.pageContent:global(.booknote-prose) h3,
+.pageContent:global(.booknote-prose) blockquote,
+.pageContent:global(.booknote-prose) code {
+  color: inherit;
+}
+
+.pageContent:global(.booknote-prose) blockquote {
+  background: color-mix(in srgb, var(--paper-bg, #fbf9f4) 88%, var(--accent-primary));
+}
+
+/* Footer */
+.pageFooter {
+  position: relative;
+  z-index: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 6px;
+  margin-top: 18px;
+}
+
+.pageNumber {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.endNote {
+  max-width: 260px;
+  margin: 24px auto 0;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}

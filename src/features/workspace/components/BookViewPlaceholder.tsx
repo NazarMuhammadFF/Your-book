@@ -1,26 +1,23 @@
-import React, { useMemo } from "react";
+import React from "react";
 import styles from "./BookViewPlaceholder.module.css";
 import { Book } from "../../books/types/book";
-import { MOCK_DOCUMENT_CONTENT } from "../../books/mock/mockBooks";
+import { JSONContent } from "@tiptap/react";
 import { COVER_PALETTES } from "../../../design/typography";
-import { createPrototypeReaderPages } from "../../reader/prototype/createPrototypeReaderPages";
 import { BookFlipView } from "../../reader/components/BookFlipView";
 
 export interface BookViewPlaceholderProps {
   book: Book;
+  content: JSONContent;
   pageIndex: number;
   onPageIndexChange: (pageIndex: number) => void;
 }
 
 export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
   book,
+  content,
   pageIndex,
   onPageIndexChange,
 }) => {
-  const pages = useMemo(
-    () => createPrototypeReaderPages(MOCK_DOCUMENT_CONTENT.default),
-    [],
-  );
   const palette =
     COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
 
@@ -31,7 +28,7 @@ export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
     >
       <BookFlipView
         book={book}
-        pages={pages}
+        content={content}
         pageIndex={pageIndex}
         onPageIndexChange={onPageIndexChange}
       />

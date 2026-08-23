@@ -74,6 +74,7 @@
   flex-direction: column;
   justify-content: flex-start;
   padding-top: 28px;
+  overflow: hidden;
 }
 
 .chapterNumber {
@@ -113,12 +114,6 @@
 .paragraph {
   margin: 0 0 var(--reader-paragraph-spacing);
   color: #302a24;
-  text-indent: 1.4em;
-}
-
-.title + .paragraph,
-.ornament + .paragraph {
-  text-indent: 0;
 }
 
 .quote {

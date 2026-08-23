@@ -1,6 +1,6 @@
 import React from "react";
 import styles from "./DocumentPage.module.css";
-import { BookTypography, BookPageSettings } from "../../books/types/book";
+import { BookTypography, BookPageSettings, PageRenderMetrics } from "../../books/types/book";
 import { FONT_FAMILIES } from "../../../design/typography";
 
 export interface DocumentPageProps {
@@ -9,6 +9,7 @@ export interface DocumentPageProps {
   headerTitle?: string;
   typography: BookTypography;
   pageSettings: BookPageSettings;
+  pageMetrics?: PageRenderMetrics;
   children: React.ReactNode;
   className?: string;
 }
@@ -18,6 +19,7 @@ export const DocumentPage: React.FC<DocumentPageProps> = ({
   headerTitle,
   typography,
   pageSettings,
+  pageMetrics,
   children,
   className = "",
 }) => {
@@ -27,7 +29,7 @@ export const DocumentPage: React.FC<DocumentPageProps> = ({
 
   return (
     <div
-      className={`${styles.a4PageSheet} ${marginClass} ${className}`}
+      className={`${styles.pageSheet} ${marginClass} ${className}`}
       style={
         {
           fontFamily: fontConfig.fontFamily,
@@ -35,18 +37,21 @@ export const DocumentPage: React.FC<DocumentPageProps> = ({
           lineHeight: typography.lineHeight,
           textAlign: typography.textAlignment,
           "--doc-p-spacing": `${typography.paragraphSpacing}px`,
+          maxWidth: pageMetrics ? `${pageMetrics.pageWidth}px` : undefined,
+          aspectRatio: pageMetrics ? `${pageMetrics.width} / ${pageMetrics.height}` : undefined,
+          minHeight: pageMetrics ? `${pageMetrics.pageHeight}px` : undefined,
         } as React.CSSProperties
       }
     >
-      {/* A4 Print Running Header Area */}
+      {/* Running Header Area */}
       <div className={styles.pageHeader}>
         {headerTitle && <span className={styles.headerText}>{headerTitle}</span>}
       </div>
 
-      {/* A4 Printable Content Flow Body */}
+      {/* Printable Content Flow Body */}
       <div className={styles.pageContentBody}>{children}</div>
 
-      {/* A4 Page Footer / Number Area */}
+      {/* Page Footer / Number Area */}
       {pageSettings.showPageNumbers && (
         <div className={styles.pageFooter}>
           <span className={styles.pageNumber}>{pageNumber}</span>

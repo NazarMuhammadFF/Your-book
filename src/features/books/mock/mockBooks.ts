@@ -1,10 +1,12 @@
 import { Book } from "../types/book";
+import { createDemoDocumentContent } from "../../document/utils/initialContent";
 
 export const INITIAL_MOCK_BOOKS: Book[] = [
   {
     id: "book-1",
     title: "The Architecture of Solitude",
     subtitle: "Essays on Quiet Thinking & Spaces",
+    content: createDemoDocumentContent(),
     cover: {
       paletteId: "navy",
       pattern: "classic-frame",

@@ -474,7 +474,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       {activeBook &&
         createPortal(
           <div className={styles.hintBar} aria-live="polite">
-            <span>Double-click front cover to open</span>
+            <span>Click book to open</span>
             <span className={styles.hintDot}>•</span>
             <span>Drag horizontally to flip</span>
             <span className={styles.hintDot}>•</span>

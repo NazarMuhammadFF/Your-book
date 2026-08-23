@@ -87,7 +87,9 @@
 
 /* 2. Extracted (Direct interactive 3D inspection) */
 .extracted {
-  cursor: grab;
+  left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
+  transform-origin: 50% 50% 0px;
+  cursor: pointer;
   user-select: none;
 }
 

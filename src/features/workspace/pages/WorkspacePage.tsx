@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import styles from "./WorkspacePage.module.css";
 import { Book } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
 import { WorkspaceHeader } from "../components/WorkspaceHeader";
-import { DocumentViewPlaceholder } from "../components/DocumentViewPlaceholder";
+import { DocumentView } from "../components/DocumentView";
 import { BookViewPlaceholder } from "../components/BookViewPlaceholder";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { transitions } from "../../../design/motion";
+import { JSONContent } from "@tiptap/react";
+import { createEmptyDocumentContent } from "../../document/utils/initialContent";
 
 export interface WorkspacePageProps {
   book: Book;
@@ -23,6 +25,25 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [viewMode, setViewMode] = useState<WorkspaceViewMode>("document");
   const [readerPageIndex, setReaderPageIndex] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Shared Canonical Document State
+  const [documentContent, setDocumentContent] = useState<JSONContent>(() => {
+    return book.content || createEmptyDocumentContent();
+  });
+
+  // Sync if another book is opened
+  useEffect(() => {
+    setDocumentContent(book.content || createEmptyDocumentContent());
+  }, [book.id]);
+
+  const handleUpdateContent = (newContent: JSONContent) => {
+    setDocumentContent(newContent);
+    onUpdateBook?.({
+      ...book,
+      content: newContent,
+      updatedAt: new Date().toISOString(),
+    });
+  };
 
   return (
     <div className={styles.workspaceContainer}>
@@ -47,7 +68,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               exit={{ opacity: 0, y: -8 }}
               transition={transitions.fast}
             >
-              <DocumentViewPlaceholder book={book} />
+              <DocumentView
+                book={book}
+                content={documentContent}
+                onUpdateContent={handleUpdateContent}
+              />
             </motion.div>
           ) : (
             <motion.div
@@ -60,6 +85,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             >
               <BookViewPlaceholder
                 book={book}
+                content={documentContent}
                 pageIndex={readerPageIndex}
                 onPageIndexChange={setReaderPageIndex}
               />
@@ -75,7 +101,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           initialBook={book}
           onClose={() => setIsSettingsOpen(false)}
           onSaveBook={(updatedBook) => {
-            onUpdateBook?.(updatedBook);
+            onUpdateBook?.({
+              ...updatedBook,
+              content: documentContent,
+            });
             setIsSettingsOpen(false);
           }}
         />

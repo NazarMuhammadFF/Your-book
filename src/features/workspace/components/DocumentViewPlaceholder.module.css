@@ -9,12 +9,11 @@
   overflow-y: auto;
 }
 
-/* Two-Page A4 Print Layout Spread */
-.a4WorkspaceSpread {
+/* Two-Page Document Print Layout Spread */
+.workspaceSpread {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 36px;
-  max-width: 1020px;
   width: 100%;
   margin: 0 auto;
   align-items: start;
@@ -22,9 +21,8 @@
 }
 
 @media (max-width: 1040px) {
-  .a4WorkspaceSpread {
+  .workspaceSpread {
     grid-template-columns: 1fr;
-    max-width: 480px;
     gap: 40px;
   }
 }

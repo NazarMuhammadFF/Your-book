@@ -63,46 +63,62 @@ export const Book: React.FC<BookProps> = ({
   const palette =
     COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
 
-  // Dynamic interactive continuous rotation (0° = front, ±180° = back)
-  const [currentAngle, setCurrentAngle] = useState<number>(activeSide === "back" ? 180 : 0);
+  // Dynamic interactive continuous rotation (Y-axis: 0° = front, ±180° = back; X-axis: vertical pitch tilt)
+  const [rotationY, setRotationY] = useState<number>(activeSide === "back" ? 180 : 0);
+  const [rotationX, setRotationX] = useState<number>(0);
   const [dragOffsetY, setDragOffsetY] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
-  const pointerStartRef = useRef<{ x: number; y: number; startAngle: number } | null>(null);
+  const pointerStartRef = useRef<{
+    x: number;
+    y: number;
+    startRotationY: number;
+    startRotationX: number;
+    startTime: number;
+    hasMoved: boolean;
+  } | null>(null);
   const isPointerDownRef = useRef<boolean>(false);
 
   // Press-and-hold timer for shelf reordering
   const holdTimerRef = useRef<number | null>(null);
-  const stowedPointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const stowedPointerStartRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
+  const suppressNextClickRef = useRef<boolean>(false);
 
   // Sync angle when activeSide prop updates externally (e.g. keyboard shortcuts)
   useEffect(() => {
     if (!isDragging) {
-      setCurrentAngle(activeSide === "back" ? 180 : 0);
+      setRotationY(activeSide === "back" ? 180 : 0);
+      setRotationX(0);
     }
   }, [activeSide, isDragging]);
 
   // Reset angle when newly extracted
   useEffect(() => {
     if (isActive) {
-      setCurrentAngle(0);
+      setRotationY(0);
+      setRotationX(0);
       setDragOffsetY(0);
     }
   }, [isActive]);
 
-  // Calculate horizontal edge compensation to keep cover inside visible scene
+  // Calculate horizontal edge compensation to keep centered cover inside visible scene
   let edgeCompensationX = 0;
   if (isActive && mode === "shelf") {
-    const bookRightEdge = slotLeft + width * scale;
-    const maxSafeRight = containerWidth - 40;
-    if (bookRightEdge > maxSafeRight) {
-      edgeCompensationX = -(bookRightEdge - maxSafeRight);
-    } else if (slotLeft < 40) {
-      edgeCompensationX = 40 - slotLeft;
+    const slotCenter = slotLeft + (thickness * scale) / 2;
+    const halfCoverWidth = (width * scale) / 2;
+    const bookLeft = slotCenter - halfCoverWidth;
+    const bookRight = slotCenter + halfCoverWidth;
+    const minSafeLeft = 24;
+    const maxSafeRight = containerWidth - 24;
+
+    if (bookRight > maxSafeRight) {
+      edgeCompensationX = maxSafeRight - bookRight;
+    } else if (bookLeft < minSafeLeft) {
+      edgeCompensationX = minSafeLeft - bookLeft;
     }
   }
 
-  // Pointer gesture handlers for active extracted book (continuous bidirectional flipping & pull-down return)
+  // Pointer gesture handlers for active extracted book (continuous centered horizontal flipping, vertical tilt & pull-down return)
   const handleActivePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isInteractive || !isActive || mode !== "shelf") return;
     if (e.button !== 0) return;
@@ -112,7 +128,10 @@ export const Book: React.FC<BookProps> = ({
     pointerStartRef.current = {
       x: e.clientX,
       y: e.clientY,
-      startAngle: currentAngle,
+      startRotationY: rotationY,
+      startRotationX: rotationX,
+      startTime: Date.now(),
+      hasMoved: false,
     };
     setIsDragging(true);
     setDragOffsetY(0);
@@ -131,48 +150,28 @@ export const Book: React.FC<BookProps> = ({
     const deltaX = e.clientX - pointerStartRef.current.x;
     const deltaY = e.clientY - pointerStartRef.current.y;
 
-    // Check if dragging downward to return to shelf
-    if (deltaY > 12 && deltaY > Math.abs(deltaX) * 1.05) {
-      const pullDown = Math.max(0, Math.min(80, deltaY - 12));
-      setDragOffsetY(pullDown);
+    if (Math.hypot(deltaX, deltaY) > 5) {
+      pointerStartRef.current.hasMoved = true;
+    }
 
-      // Slightly tilt angle toward 90deg (spine) as downward drag increases
-      const returnRatio = Math.min(1, pullDown / 50);
-      const baseAngle = pointerStartRef.current.startAngle;
-      const interpolatedAngle = baseAngle + (90 - baseAngle) * (returnRatio * 0.35);
-      setCurrentAngle(interpolatedAngle);
+    // Check if dragging downward to return to shelf
+    if (deltaY > 60 && deltaY > Math.abs(deltaX) * 1.3) {
+      const pullDown = Math.max(0, Math.min(80, deltaY - 60));
+      setDragOffsetY(pullDown);
       return;
     }
-
-    // Horizontal continuous bidirectional drag
     setDragOffsetY(0);
-    const startAngle = pointerStartRef.current.startAngle;
-    const SENSITIVITY = 0.95; // deg per px
 
-    if (Math.abs(startAngle) < 10) {
-      // Starting from Front (0°):
-      const nextAngle = Math.max(-180, Math.min(180, deltaX * SENSITIVITY));
-      setCurrentAngle(nextAngle);
-    } else {
-      // Starting from Back (±180°):
-      if (startAngle >= 0) {
-        if (deltaX <= 0) {
-          const nextAngle = Math.max(0, Math.min(180, 180 + deltaX * SENSITIVITY));
-          setCurrentAngle(nextAngle);
-        } else {
-          const nextAngle = Math.max(0, Math.min(180, 180 - deltaX * SENSITIVITY));
-          setCurrentAngle(nextAngle);
-        }
-      } else {
-        if (deltaX >= 0) {
-          const nextAngle = Math.min(0, Math.max(-180, -180 + deltaX * SENSITIVITY));
-          setCurrentAngle(nextAngle);
-        } else {
-          const nextAngle = Math.min(0, Math.max(-180, -180 - deltaX * SENSITIVITY));
-          setCurrentAngle(nextAngle);
-        }
-      }
-    }
+    // Centered horizontal rotation (Y-axis)
+    const SENSITIVITY_Y = 0.85; // deg per px
+    const nextRotationY = pointerStartRef.current.startRotationY + deltaX * SENSITIVITY_Y;
+    setRotationY(nextRotationY);
+
+    // Centered vertical rotation (X-axis): tilting up/down clamped to [-32°, +32°]
+    const SENSITIVITY_X = 0.45; // deg per px
+    const rawRotationX = pointerStartRef.current.startRotationX - deltaY * SENSITIVITY_X;
+    const clampedRotationX = Math.max(-32, Math.min(32, rawRotationX));
+    setRotationX(clampedRotationX);
   };
 
   const handleActivePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -192,36 +191,37 @@ export const Book: React.FC<BookProps> = ({
 
     if (!startInfo) return;
 
+    const duration = Date.now() - startInfo.startTime;
     const deltaY = e.clientY - startInfo.y;
+    const totalDist = Math.hypot(e.clientX - startInfo.x, e.clientY - startInfo.y);
 
     // 1. If pulled downward past threshold -> return to shelf!
-    if (deltaY > 35 && dragOffsetY > 18) {
+    if (deltaY > 50 && dragOffsetY > 18) {
       setDragOffsetY(0);
       onReturnToShelf?.();
       return;
     }
     setDragOffsetY(0);
 
-    // 2. Settling threshold for bidirectional horizontal rotation
-    const startAngle = startInfo.startAngle;
-    let targetAngle = startAngle;
-
-    if (Math.abs(startAngle) < 10) {
-      if (Math.abs(currentAngle) > 45) {
-        targetAngle = currentAngle < 0 ? -180 : 180;
-      } else {
-        targetAngle = 0;
-      }
-    } else {
-      if (Math.abs(currentAngle) < 135) {
-        targetAngle = 0;
-      } else {
-        targetAngle = startAngle < 0 ? -180 : 180;
-      }
+    // 2. Only a clean quick click (< 250ms and <= 6px movement) opens the book pages!
+    if (!startInfo.hasMoved && totalDist <= 6 && duration < 250 && dragOffsetY <= 5) {
+      onOpenBook?.(book);
+      return;
     }
 
-    setCurrentAngle(targetAngle);
-    onSideChange?.(Math.abs(targetAngle) >= 90 ? "back" : "front");
+    // 3. Smoothly settle vertical rotation back to 0° (upright)
+    setRotationX(0);
+
+    // 4. Settling threshold for centered horizontal rotation: snap to nearest front (0°) or back (180°)
+    const normAngle = ((rotationY % 360) + 360) % 360;
+    const isCloserToBack = normAngle >= 90 && normAngle <= 270;
+    const turns = isCloserToBack
+      ? Math.round((rotationY - 180) / 360)
+      : Math.round(rotationY / 360);
+    const targetRotationY = isCloserToBack ? turns * 360 + 180 : turns * 360;
+
+    setRotationY(targetRotationY);
+    onSideChange?.(isCloserToBack ? "back" : "front");
   };
 
   // Press-and-hold interaction handlers for stowed shelf book
@@ -229,7 +229,8 @@ export const Book: React.FC<BookProps> = ({
     if (!isInteractive || isActive || isGhost || mode !== "shelf") return;
     if (e.button !== 0) return;
 
-    stowedPointerStartRef.current = { x: e.clientX, y: e.clientY };
+    stowedPointerStartRef.current = { x: e.clientX, y: e.clientY, startTime: Date.now() };
+    suppressNextClickRef.current = false;
     const rect = e.currentTarget.getBoundingClientRect();
 
     if (holdTimerRef.current) {
@@ -238,6 +239,7 @@ export const Book: React.FC<BookProps> = ({
 
     holdTimerRef.current = window.setTimeout(() => {
       holdTimerRef.current = null;
+      suppressNextClickRef.current = true;
       stowedPointerStartRef.current = null;
       onHoldStart?.(book, e.clientX, e.clientY, rect);
     }, 280);
@@ -248,6 +250,7 @@ export const Book: React.FC<BookProps> = ({
     const dx = Math.abs(e.clientX - stowedPointerStartRef.current.x);
     const dy = Math.abs(e.clientY - stowedPointerStartRef.current.y);
     if (dx > 6 || dy > 6) {
+      suppressNextClickRef.current = true;
       if (holdTimerRef.current) {
         clearTimeout(holdTimerRef.current);
         holdTimerRef.current = null;
@@ -261,6 +264,12 @@ export const Book: React.FC<BookProps> = ({
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
+    if (stowedPointerStartRef.current) {
+      const duration = Date.now() - stowedPointerStartRef.current.startTime;
+      if (duration >= 250) {
+        suppressNextClickRef.current = true;
+      }
+    }
     stowedPointerStartRef.current = null;
   };
 
@@ -268,10 +277,7 @@ export const Book: React.FC<BookProps> = ({
   const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isInteractive || !isActive || mode !== "shelf") return;
     e.stopPropagation();
-
-    if (Math.abs(currentAngle) <= 60) {
-      onOpenBook?.(book);
-    }
+    onOpenBook?.(book);
   };
 
   // Keyboard accessibility
@@ -291,8 +297,11 @@ export const Book: React.FC<BookProps> = ({
         onReturnToShelf?.();
       } else if (e.key === "f" || e.key === "F") {
         e.preventDefault();
-        const nextSide = Math.abs(currentAngle) >= 90 ? "front" : "back";
-        setCurrentAngle(nextSide === "back" ? 180 : 0);
+        const norm = ((rotationY % 360) + 360) % 360;
+        const currentlyBack = norm >= 90 && norm <= 270;
+        const nextSide = currentlyBack ? "front" : "back";
+        setRotationY(nextSide === "back" ? 180 : 0);
+        setRotationX(0);
         onSideChange?.(nextSide);
       }
     }
@@ -307,7 +316,7 @@ export const Book: React.FC<BookProps> = ({
     transformStyle = `rotateY(${previewRotationY}deg) rotateX(${previewRotationX}deg)`;
   } else if (isActive) {
     stateClass = `${styles.extracted} ${isDragging ? styles.extractedDragging : styles.extractedSettled}`;
-    transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 90px)) rotateY(${currentAngle}deg)`;
+    transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 90px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
   } else if (isLifted) {
     stateClass = styles.lifted;
   } else if (isSettling) {
@@ -351,12 +360,18 @@ export const Book: React.FC<BookProps> = ({
     <div
       role={mode === "shelf" && isInteractive && !isGhost ? "button" : undefined}
       tabIndex={mode === "shelf" && isInteractive && !isGhost ? 0 : undefined}
-      aria-label={`Book: ${book.title}${book.cover.authorName ? ` by ${book.cover.authorName}` : ""}. ${isActive ? "Double-click front cover to open. Drag horizontally to flip. Drag down or press Escape to return." : "Click to inspect. Press and hold to reorder on shelf."}`}
+      aria-label={`Book: ${book.title}${book.cover.authorName ? ` by ${book.cover.authorName}` : ""}. ${isActive ? "Click book to open. Drag horizontally to flip. Drag down or press Escape to return." : "Click to inspect. Press and hold to reorder on shelf."}`}
       aria-expanded={isActive}
       onClick={(e) => {
-        if (mode === "shelf" && isInteractive && !isActive && !isGhost) {
+        if (mode === "shelf" && isInteractive && !isGhost) {
           e.stopPropagation();
-          onSelect?.(book);
+          if (suppressNextClickRef.current) {
+            suppressNextClickRef.current = false;
+            return;
+          }
+          if (!isActive) {
+            onSelect?.(book);
+          }
         }
       }}
       onDoubleClick={handleDoubleClick}

@@ -1,18 +1,20 @@
-import React, { useLayoutEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "../../../components/ui/Button";
-import { Book } from "../../books/types/book";
+import { Book, getBookPageMetrics } from "../../books/types/book";
 import { BookFlipAdapter } from "../flip/BookFlipAdapter";
 import { StPageFlipAdapter } from "../flip/StPageFlipAdapter";
 import { BookFlipSnapshot } from "../flip/types";
-import { ReaderPageData } from "../types/readerPage";
+import { JSONContent } from "@tiptap/react";
+import { paginateDocument } from "../../document/utils/pagination";
 import { ReaderPage } from "./ReaderPage";
 import styles from "./BookFlipView.module.css";
+import "../../document/styles/editor.css";
 
 export interface BookFlipViewProps {
   book: Book;
-  pages: ReaderPageData[];
+  content: JSONContent;
   pageIndex: number;
   onPageIndexChange: (pageIndex: number) => void;
 }
@@ -24,7 +26,7 @@ function normalizePageIndex(pageIndex: number, pageCount: number): number {
 
 export const BookFlipView: React.FC<BookFlipViewProps> = ({
   book,
-  pages,
+  content,
   pageIndex,
   onPageIndexChange,
 }) => {
@@ -34,22 +36,47 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
   const pageElementsRef = useRef<Array<HTMLDivElement | null>>([]);
   const adapterRef = useRef<BookFlipAdapter | null>(null);
   const generationRef = useRef(0);
+
+  const pageMetrics = useMemo(() => getBookPageMetrics(book), [book]);
+
+  // Paginate shared document content
+  const paginatedPages = useMemo(
+    () => paginateDocument(content, book),
+    [content, book]
+  );
+
+  // Ensure even number of pages for dual-page spread
+  const renderPages = useMemo(() => {
+    const pages = [...paginatedPages];
+    if (pages.length % 2 !== 0) {
+      pages.push({
+        pageNumber: pages.length + 1,
+        nodes: [],
+        wordCount: 0,
+        charCount: 0,
+        hasContent: false,
+      });
+    }
+    return pages;
+  }, [paginatedPages]);
+
   const initialSnapshot: BookFlipSnapshot = {
-    currentPageIndex: normalizePageIndex(pageIndex, pages.length),
-    pageCount: pages.length,
+    currentPageIndex: normalizePageIndex(pageIndex, renderPages.length),
+    pageCount: renderPages.length,
     isAtStart: pageIndex <= 0,
-    isAtEnd: pageIndex >= Math.max(0, pages.length - 2),
+    isAtEnd: pageIndex >= Math.max(0, renderPages.length - 2),
     state: "idle",
   };
   const [snapshot, setSnapshot] = useState<BookFlipSnapshot>(initialSnapshot);
 
+  // Mount 3D PageFlip Engine
   useLayoutEffect(() => {
     if (prefersReducedMotion || !hostRef.current || !frameRef.current) return;
 
     const pageElements = pageElementsRef.current.filter(
       (element): element is HTMLDivElement => element !== null,
     );
-    if (pageElements.length !== pages.length) return;
+    if (pageElements.length !== renderPages.length) return;
 
     const generation = ++generationRef.current;
     const adapter = new StPageFlipAdapter();
@@ -58,6 +85,8 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
       host: hostRef.current,
       pageElements,
       initialPageIndex: pageIndex,
+      pageWidth: pageMetrics.pageWidth,
+      pageHeight: pageMetrics.pageHeight,
       onSnapshotChange: (nextSnapshot) => {
         if (generationRef.current !== generation || adapterRef.current !== adapter) return;
         setSnapshot(nextSnapshot);
@@ -82,15 +111,23 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
       if (adapterRef.current === adapter) adapterRef.current = null;
       adapter.destroy();
     };
-  }, [book.id, onPageIndexChange, pages, prefersReducedMotion]);
+  }, [
+    book.id,
+    book.pageSettings.pageSizePreset,
+    onPageIndexChange,
+    pageMetrics.pageHeight,
+    pageMetrics.pageWidth,
+    renderPages.length,
+    prefersReducedMotion,
+  ]);
 
-  const staticPageIndex = normalizePageIndex(pageIndex, pages.length);
+  const staticPageIndex = normalizePageIndex(pageIndex, renderPages.length);
   const activeSnapshot = prefersReducedMotion
     ? {
         currentPageIndex: staticPageIndex,
-        pageCount: pages.length,
+        pageCount: renderPages.length,
         isAtStart: staticPageIndex === 0,
-        isAtEnd: staticPageIndex >= Math.max(0, pages.length - 2),
+        isAtEnd: staticPageIndex >= Math.max(0, renderPages.length - 2),
         state: "idle" as const,
       }
     : snapshot;
@@ -104,7 +141,7 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
   const goNext = () => {
     if (activeSnapshot.isAtEnd) return;
     if (prefersReducedMotion) {
-      onPageIndexChange(Math.min(pages.length - 2, staticPageIndex + 2));
+      onPageIndexChange(Math.min(renderPages.length - 2, staticPageIndex + 2));
     } else {
       adapterRef.current?.next();
     }
@@ -128,39 +165,69 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
     ? "Reduced motion: use the controls or arrow keys"
     : activeSnapshot.state === "dragging"
       ? "Release to turn or return the page"
-      : "Drag an outer page corner to turn";
+      : "Use Previous/Next, arrow keys, or corner handles to flip";
 
   return (
     <section
       className={styles.reader}
       aria-label={`Interactive Book View for ${book.title}`}
     >
+      {/* 3D Hardcover Book Container */}
       <div
         ref={frameRef}
         className={styles.hardcover}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Book pages. Use Left and Right Arrow keys to navigate."
+        style={
+          {
+            maxWidth: `${pageMetrics.spreadWidth + 48}px`,
+            aspectRatio: `${pageMetrics.spreadWidth} / ${pageMetrics.spreadHeight}`,
+          } as React.CSSProperties
+        }
       >
         <div className={styles.pageStackLeft} aria-hidden="true" />
         <div className={styles.pageStackRight} aria-hidden="true" />
 
         {prefersReducedMotion ? (
-          <div className={styles.staticSpread}>
-            {pages.slice(staticPageIndex, staticPageIndex + 2).map((page) => (
-              <ReaderPage key={page.id} book={book} page={page} />
+          <div
+            className={styles.staticSpread}
+            style={{
+              aspectRatio: `${pageMetrics.spreadWidth} / ${pageMetrics.spreadHeight}`,
+            }}
+          >
+            {renderPages.slice(staticPageIndex, staticPageIndex + 2).map((page) => (
+              <ReaderPage
+                key={page.pageNumber}
+                book={book}
+                pageNumber={page.pageNumber}
+                totalPages={renderPages.length}
+                nodes={page.nodes}
+                runningTitle={book.title}
+                isEndCover={!page.hasContent && page.pageNumber > 1}
+              />
             ))}
           </div>
         ) : (
-          <div ref={hostRef} className={styles.engineHost}>
-            {pages.map((page, index) => (
+          <div
+            ref={hostRef}
+            className={styles.engineHost}
+            style={{
+              aspectRatio: `${pageMetrics.spreadWidth} / ${pageMetrics.spreadHeight}`,
+            }}
+          >
+            {renderPages.map((page, index) => (
               <ReaderPage
-                key={page.id}
+                key={page.pageNumber}
                 ref={(element) => {
                   pageElementsRef.current[index] = element;
                 }}
                 book={book}
-                page={page}
+                pageNumber={page.pageNumber}
+                totalPages={renderPages.length}
+                nodes={page.nodes}
+                runningTitle={book.title}
+                isEndCover={!page.hasContent && page.pageNumber > 1}
               />
             ))}
           </div>
@@ -169,6 +236,7 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
         <div className={styles.gutter} aria-hidden="true" />
       </div>
 
+      {/* Navigation Controls */}
       <div className={styles.controls}>
         <Button
           size="sm"
@@ -192,7 +260,9 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
           Next
         </Button>
       </div>
+
       <p className={styles.hint}>{interactionHint}</p>
+
     </section>
   );
 };

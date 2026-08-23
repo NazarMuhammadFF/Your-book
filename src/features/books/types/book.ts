@@ -1,4 +1,5 @@
 import { CoverPattern } from "../../../design/typography";
+import { JSONContent } from "@tiptap/react";
 
 export interface BookCover {
   paletteId: string;
@@ -61,6 +62,7 @@ export interface Book {
   typography: BookTypography;
   pageSettings: BookPageSettings;
   dimensions: BookVisualDimensions;
+  content?: JSONContent;
   createdAt: string;
   updatedAt: string;
 }
@@ -142,4 +144,45 @@ export function getBookDimensions(book: Book): BookVisualDimensions & {
   const rotationDeg = book.dimensions?.rotationDeg || 0;
 
   return { width, height, thickness, pagesOffset, coverThickness, rotationDeg };
+}
+
+export interface PageRenderMetrics {
+  presetId: PageSizePreset;
+  presetLabel: string;
+  presetDescription: string;
+  width: number;
+  height: number;
+  aspectRatio: number;
+  pageWidth: number;
+  pageHeight: number;
+  spreadWidth: number;
+  spreadHeight: number;
+}
+
+/**
+ * Returns rendering metrics (aspect ratio, scaled page dimensions, spread dimensions)
+ * for a book based on its configured pageSizePreset.
+ */
+export function getBookPageMetrics(book: Book): PageRenderMetrics {
+  const presetId = book.pageSettings?.pageSizePreset || "a5";
+  const preset =
+    PAGE_SIZE_PRESETS.find((p) => p.id === presetId) ||
+    PAGE_SIZE_PRESETS[1]; // default A5
+
+  const scale = 2.6;
+  const pageWidth = Math.round(preset.width * scale);
+  const pageHeight = Math.round(preset.height * scale);
+
+  return {
+    presetId: preset.id,
+    presetLabel: preset.label,
+    presetDescription: preset.description,
+    width: preset.width,
+    height: preset.height,
+    aspectRatio: preset.width / preset.height,
+    pageWidth,
+    pageHeight,
+    spreadWidth: pageWidth * 2,
+    spreadHeight: pageHeight,
+  };
 }

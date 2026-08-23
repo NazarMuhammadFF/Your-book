@@ -1,9 +1,8 @@
-/* Standard ISO 216 A4 Sheet (210 : 297) */
-.a4PageSheet {
+/* Configured Document Page Sheet */
+.pageSheet {
   width: 100%;
   max-width: 480px;
-  min-height: 678px;
-  aspect-ratio: 210 / 297;
+  min-height: 580px;
   background-color: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border-subtle);

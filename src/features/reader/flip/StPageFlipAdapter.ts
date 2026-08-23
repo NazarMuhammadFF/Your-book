@@ -36,21 +36,31 @@ export class StPageFlipAdapter implements BookFlipAdapter {
     state: "idle",
   };
 
-  mount({ host, pageElements, initialPageIndex, onSnapshotChange }: BookFlipMountOptions): void {
+  mount({
+    host,
+    pageElements,
+    initialPageIndex,
+    pageWidth,
+    pageHeight,
+    onSnapshotChange,
+  }: BookFlipMountOptions): void {
     if (this.engine) throw new Error("Book flip adapter is already mounted");
 
     this.destroyed = false;
     this.onSnapshotChange = onSnapshotChange;
     const startPage = normalizePageIndex(initialPageIndex, pageElements.length);
 
+    const width = pageWidth || PAGE_WIDTH;
+    const height = pageHeight || PAGE_HEIGHT;
+
     const engine = new PageFlip(host, {
-      width: PAGE_WIDTH,
-      height: PAGE_HEIGHT,
+      width,
+      height,
       size: "stretch",
-      minWidth: 220,
-      maxWidth: 480,
-      minHeight: 290,
-      maxHeight: 630,
+      minWidth: Math.round(width * 0.45),
+      maxWidth: Math.round(width * 1.25),
+      minHeight: Math.round(height * 0.45),
+      maxHeight: Math.round(height * 1.25),
       startPage,
       autoSize: true,
       usePortrait: false,

@@ -1,0 +1,184 @@
+/* Rich Text Editor Prose Styling */
+.booknote-prose,
+.ProseMirror {
+  outline: none;
+  min-height: 100%;
+  color: var(--text-primary);
+  font-feature-settings: "kern", "liga", "clig", "calt";
+  text-rendering: optimizeLegibility;
+  overflow-wrap: anywhere;
+}
+
+.booknote-page-break {
+  display: inline-block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  vertical-align: top;
+  pointer-events: none;
+  user-select: none;
+}
+
+.booknote-prose p {
+  margin: 0 0 var(--doc-p-spacing, 16px) 0;
+  line-height: inherit;
+  color: inherit;
+}
+
+.booknote-prose h1 {
+  margin: 0 0 16px 0;
+  font-size: 1.55em;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.booknote-prose h2 {
+  margin: 22px 0 12px 0;
+  font-size: 1.28em;
+  font-weight: 600;
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.booknote-prose h3 {
+  margin: 18px 0 8px 0;
+  font-size: 1.12em;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+}
+
+.booknote-prose blockquote {
+  margin: 14px 0 18px 0;
+  padding: 8px 18px;
+  border-left: 3px solid var(--accent-primary);
+  background-color: var(--bg-canvas-subtle);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-primary);
+  font-style: italic;
+}
+
+.booknote-prose blockquote p {
+  margin-bottom: 0;
+}
+
+.booknote-prose ul:not([data-type="taskList"]) {
+  margin: 8px 0 16px 24px;
+  padding: 0;
+  list-style-type: disc;
+}
+
+.booknote-prose ol {
+  margin: 8px 0 16px 24px;
+  padding: 0;
+  list-style-type: decimal;
+}
+
+.booknote-prose li {
+  margin-bottom: 6px;
+  line-height: inherit;
+}
+
+.booknote-prose li p {
+  margin: 0;
+}
+
+/* Task list (checklist) */
+.booknote-prose ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 16px 0;
+}
+
+.booknote-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.booknote-prose ul[data-type="taskList"] li > label {
+  margin-top: 3px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.booknote-prose ul[data-type="taskList"] li > label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+  width: 14px;
+  height: 14px;
+}
+
+.booknote-prose ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.booknote-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background-color: var(--bg-canvas-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: var(--text-primary);
+}
+
+.booknote-prose mark {
+  background-color: #ffec99;
+  color: #29231d;
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+
+.booknote-prose hr {
+  border: none;
+  height: 1px;
+  background-color: var(--border-subtle);
+  margin: 24px 0;
+}
+
+/* Figures & Images */
+.booknote-prose figure.book-figure {
+  margin: 16px auto;
+  display: block;
+  max-width: 100%;
+}
+
+.booknote-prose figure.book-figure img.book-image-element {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  display: block;
+}
+
+.booknote-prose figcaption.book-image-caption {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Placeholder */
+.booknote-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--text-muted);
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Selection */
+.booknote-prose ::selection {
+  background: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+}
