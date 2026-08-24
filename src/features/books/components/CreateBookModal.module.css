@@ -139,13 +139,13 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--motion-fast) var(--ease-out);
-  outline: none;
+  margin-bottom: -1px;
 }
 
 .tabBtn:hover {
@@ -158,21 +158,14 @@
   font-weight: 600;
 }
 
-/* Tab Body */
 .tabBody {
-  min-height: 220px;
+  padding-top: var(--space-1);
 }
 
 .tabContent {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  animation: fadeIn 150ms ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .section {
@@ -185,16 +178,138 @@
   font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
+  color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+}
+
+/* Cover Type Segmented Control */
+.coverTypeSegment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--bg-canvas-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 3px;
+}
+
+.segmentBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.segmentBtn:hover {
+  color: var(--text-primary);
+}
+
+.segmentBtnActive {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Upload Dropzone */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  background: var(--bg-canvas-subtle);
+  border: 1.5px dashed var(--border-medium, rgba(70, 60, 50, 0.2));
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.dropzone:hover,
+.dropzoneActive {
+  border-color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
+}
+
+.dropzoneIcon {
+  color: var(--accent-primary);
+  opacity: 0.8;
+}
+
+.dropzoneTitle {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dropzoneSub {
+  font-family: var(--font-sans);
+  font-size: 11px;
   color: var(--text-muted);
+}
+
+/* Image Preview Card */
+.imageCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.imageThumbnail {
+  width: 52px;
+  height: 68px;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.imageMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.imageTitle {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.imageActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Palette Grid */
 .paletteGrid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-2);
 }
 
 .colorChip {
@@ -202,27 +317,27 @@
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
   cursor: pointer;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--motion-fast) var(--ease-out);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .colorChip:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  transform: scale(1.05);
 }
 
 .selectedChip {
-  border-color: #ffffff;
-  box-shadow: 0 0 0 2px var(--accent-primary), 0 4px 8px rgba(0, 0, 0, 0.3);
-  transform: scale(1.08);
+  border-color: var(--accent-primary);
+  transform: scale(1.05);
+  box-shadow: 0 0 0 1px var(--bg-surface), 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .checkMark {
-  color: #ffffff;
-  font-size: 13px;
+  color: white;
+  font-size: 12px;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
@@ -231,12 +346,12 @@
 .patternGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .patternButton {
-  padding: 8px 10px;
-  border-radius: var(--radius-md);
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-default);
   background: var(--bg-surface);
   color: var(--text-secondary);
@@ -261,50 +376,12 @@
   font-weight: 600;
 }
 
-/* Disabled Feature Box */
-.disabledFeatureBox {
-  background: var(--bg-canvas-subtle);
-  border: 1px dashed var(--border-default);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  opacity: 0.75;
-}
-
-.disabledHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.comingSoonTag {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  background: var(--bg-surface-sunken);
-  color: var(--text-muted);
-  padding: 2px 6px;
-  border-radius: var(--radius-xs);
-  font-weight: 600;
-}
-
-.disabledText {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 /* Toggle row */
 .toggleRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -314,7 +391,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-primary);
   cursor: pointer;

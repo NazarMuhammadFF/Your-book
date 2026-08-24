@@ -21,12 +21,13 @@ export const BookCover: React.FC<BookCoverProps> = ({
   isBack = false,
 }) => {
   const palette = COVER_PALETTES.find((p) => p.id === cover.paletteId) || COVER_PALETTES[0];
+  const isCustomCover = cover.coverType === "custom" && Boolean(cover.customImageUrl);
 
   return (
     <div
-      className={`${styles.cover} ${styles[cover.pattern]} ${compact ? styles.compact : ""} ${
-        isBack ? styles.backCover : ""
-      } ${className}`}
+      className={`${styles.cover} ${!isCustomCover ? styles[cover.pattern] : styles.customCover} ${
+        compact ? styles.compact : ""
+      } ${isBack ? styles.backCover : ""} ${className}`}
       style={
         {
           "--cover-primary": palette.primary,
@@ -37,20 +38,43 @@ export const BookCover: React.FC<BookCoverProps> = ({
         } as React.CSSProperties
       }
     >
+      {/* Custom Uploaded Image Layer */}
+      {isCustomCover && (
+        <div
+          className={styles.customImageLayer}
+          style={{
+            backgroundImage: `url("${cover.customImageUrl}")`,
+            backgroundSize: cover.imageFit === "contain" ? "contain" : "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
+      )}
+
+      {/* Custom Dark Overlay for Text Readability */}
+      {isCustomCover && (
+        <div
+          className={styles.customOverlay}
+          style={{
+            backgroundColor: `rgba(0, 0, 0, ${cover.overlayOpacity ?? 0.25})`,
+          }}
+        />
+      )}
+
       {/* Subtle paper/cloth texture sheen overlay */}
       <div className={styles.textureSheen} />
 
       {/* Spine hinge fold shadow line */}
       <div className={styles.spineHinge} />
 
-      {/* Pattern decoration layers */}
-      {cover.pattern === "classic-frame" && (
+      {/* Pattern decoration layers (for preset pattern covers) */}
+      {!isCustomCover && cover.pattern === "classic-frame" && (
         <div className={styles.frameDecoration}>
           <div className={styles.innerFrame} />
         </div>
       )}
 
-      {cover.pattern === "modern-geo" && (
+      {!isCustomCover && cover.pattern === "modern-geo" && (
         <div className={styles.geoDecoration}>
           <div className={styles.geoLineVertical} />
           <div className={styles.geoLineHorizontal} />
@@ -58,7 +82,7 @@ export const BookCover: React.FC<BookCoverProps> = ({
         </div>
       )}
 
-      {cover.pattern === "vintage-border" && (
+      {!isCustomCover && cover.pattern === "vintage-border" && (
         <div className={styles.vintageDecoration}>
           <span className={styles.cornerTL}>⌜</span>
           <span className={styles.cornerTR}>⌝</span>
@@ -68,7 +92,7 @@ export const BookCover: React.FC<BookCoverProps> = ({
         </div>
       )}
 
-      {cover.pattern === "center-badge" && !isBack && (
+      {!isCustomCover && cover.pattern === "center-badge" && !isBack && (
         <div className={styles.badgeDecoration}>
           <div className={styles.emblem}>{cover.badgeText || "★"}</div>
         </div>

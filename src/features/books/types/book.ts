@@ -8,6 +8,10 @@ export interface BookCover {
   authorVisible?: boolean;
   authorName?: string;
   badgeText?: string;
+  coverType?: "preset" | "custom";
+  customImageUrl?: string;
+  imageFit?: "cover" | "contain";
+  overlayOpacity?: number; // 0 to 0.8, default 0.2
 }
 
 export interface PageMargins {
