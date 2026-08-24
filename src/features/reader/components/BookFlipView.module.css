@@ -46,36 +46,12 @@
     0 36px 80px -20px rgba(0, 0, 0, 0.65);
 }
 
-/* Center book spine crease shadow that persists across all page turns */
-.centerSpine {
-  position: absolute;
-  top: 10px;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36px;
-  pointer-events: none;
-  z-index: 8;
-  background: linear-gradient(
-    90deg,
-    rgba(20, 15, 10, 0) 0%,
-    rgba(20, 15, 10, 0.05) 28%,
-    rgba(20, 15, 10, 0.18) 48%,
-    rgba(15, 10, 5, 0.35) 50%,
-    rgba(20, 15, 10, 0.18) 52%,
-    rgba(20, 15, 10, 0.05) 72%,
-    rgba(20, 15, 10, 0) 100%
-  );
-  mix-blend-mode: multiply;
-}
-
-/* Dynamic page flip shadows */
+/* Mengatur tingkat kegelapan bayangan lipatan kertas saat sedang dibalik (flip animation) */
 .hardcoverWrapper :global(.stf__outerShadow),
 .hardcoverWrapper :global(.stf__innerShadow),
 .hardcoverWrapper :global(.stf__hardShadow),
 .hardcoverWrapper :global(.stf__hardInnerShadow) {
   opacity: var(--reader-flip-shadow-opacity, 0.35) !important;
-  pointer-events: none !important;
 }
 
 .flipPage {
@@ -86,6 +62,27 @@
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.centerSpineShadow {
+  position: absolute;
+  top: 10px;
+  bottom: 14px;
+  left: 50%;
+  width: 32px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(30, 20, 10, 0.04) 25%,
+    rgba(30, 20, 10, 0.14) 48%,
+    rgba(20, 15, 10, 0.22) 50%,
+    rgba(30, 20, 10, 0.14) 52%,
+    rgba(30, 20, 10, 0.04) 75%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 
 .coverPage {

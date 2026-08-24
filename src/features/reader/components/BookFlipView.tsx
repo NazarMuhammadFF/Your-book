@@ -192,7 +192,9 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
               </PageSlot>
             ))}
           </HTMLFlipBook>
-          <div className={styles.centerSpine} aria-hidden="true" />
+
+          {/* Persistent Center Spine Gutter Shadow */}
+          <div className={styles.centerSpineShadow} aria-hidden="true" />
         </div>
       </div>
 

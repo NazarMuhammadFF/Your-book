@@ -34,32 +34,20 @@
 
 /* Book View Dual-Page Spines */
 .leftPage {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--paper-bg, #fcfaf6) 90%, #dcd4c3) 0%,
-    var(--paper-bg, #fcfaf6) 12%,
-    var(--paper-bg, #fcfaf6) 86%,
-    color-mix(in srgb, var(--paper-bg, #fcfaf6) 82%, #b5a995) 100%
-  );
-  border-right: 1px solid rgba(70, 55, 40, 0.12);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--paper-bg, #fcfaf6) 88%, #dcd4c3) 0%, var(--paper-bg, #fcfaf6) 12%, var(--paper-bg, #fcfaf6) 88%, color-mix(in srgb, var(--paper-bg, #fcfaf6) 94%, #dcd4c3) 100%);
+  border-right: 1px solid rgba(70, 55, 40, 0.08);
 }
 
 .rightPage {
-  background: linear-gradient(
-    270deg,
-    color-mix(in srgb, var(--paper-bg, #fcfaf6) 90%, #dcd4c3) 0%,
-    var(--paper-bg, #fcfaf6) 12%,
-    var(--paper-bg, #fcfaf6) 86%,
-    color-mix(in srgb, var(--paper-bg, #fcfaf6) 82%, #b5a995) 100%
-  );
+  background: linear-gradient(270deg, color-mix(in srgb, var(--paper-bg, #fcfaf6) 88%, #dcd4c3) 0%, var(--paper-bg, #fcfaf6) 12%, var(--paper-bg, #fcfaf6) 88%, color-mix(in srgb, var(--paper-bg, #fcfaf6) 94%, #dcd4c3) 100%);
 }
 
 .gutterShadowLeft {
-  box-shadow: inset -12px 0 18px -6px rgba(25, 18, 12, 0.16);
+  box-shadow: inset -10px 0 16px -8px rgba(30, 20, 10, 0.12);
 }
 
 .gutterShadowRight {
-  box-shadow: inset 12px 0 18px -6px rgba(25, 18, 12, 0.16);
+  box-shadow: inset 10px 0 16px -8px rgba(30, 20, 10, 0.12);
 }
 
 /* Tactile paper light sheen overlay */
