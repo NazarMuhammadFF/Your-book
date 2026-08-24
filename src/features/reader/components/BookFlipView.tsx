@@ -136,6 +136,14 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Book pages. Use Left and Right Arrow keys to navigate."
+        style={
+          scale < 1
+            ? {
+                transform: `scale(${scale})`,
+                transformOrigin: "top center",
+              }
+            : undefined
+        }
       >
         <HTMLFlipBook
           ref={flipBookRef}
@@ -164,7 +172,6 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
                 nodes={page.nodes}
                 runningTitle={book.title}
                 isEndCover={!page.hasContent && page.pageNumber > paginatedPages.length}
-                scale={scale}
               />
             </PageSlot>
           ))}

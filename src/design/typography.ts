@@ -14,19 +14,19 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
     id: "serif",
     name: "Classic Serif",
     category: "serif",
-    fontFamily: 'var(--font-serif, "Merriweather", "Georgia", serif)',
+    fontFamily: 'var(--font-serif, "Newsreader", "Lora", "Merriweather", "Georgia", "Charter", serif)',
   },
   {
     id: "sans",
     name: "Modern Sans",
     category: "sans",
-    fontFamily: 'var(--font-sans, "Inter", sans-serif)',
+    fontFamily: 'var(--font-sans, "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif)',
   },
   {
     id: "mono",
     name: "Focus Mono",
     category: "mono",
-    fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+    fontFamily: 'var(--font-mono, "JetBrains Mono", "Cascadia Code", "Fira Code", monospace)',
   },
 ];
 

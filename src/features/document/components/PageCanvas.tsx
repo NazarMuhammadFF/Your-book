@@ -50,7 +50,6 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
     const fontConfig =
       FONT_FAMILIES.find((font) => font.id === book.typography.fontFamilyId) ??
       FONT_FAMILIES[0];
-    const marginClass = styles[book.pageSettings?.pageMargin || "normal"] ?? styles.normal;
 
     let sideClass = "";
     if (side === "left") sideClass = styles.leftPage;
@@ -65,27 +64,34 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
     return (
       <div
         ref={ref}
-        className={`${styles.pageCanvas} ${marginClass} ${sideClass} ${gutterClass} ${isActive ? styles.activeCanvas : ""} ${className}`}
+        className={`${styles.pageCanvas} ${sideClass} ${gutterClass} ${isActive ? styles.activeCanvas : ""} ${className}`}
         onClick={onClick}
         onPointerDown={onPointerDown}
         onMouseDown={onMouseDown}
         style={
           {
+            "--page-width": `${pageMetrics.pageWidth}px`,
+            "--page-height": `${pageMetrics.pageHeight}px`,
+            "--page-pad-top": `${margins.top}px`,
+            "--page-pad-bottom": `${margins.bottom}px`,
+            "--page-pad-left": `${margins.left}px`,
+            "--page-pad-right": `${margins.right}px`,
+            "--page-pad-x": `${(margins.left + margins.right) / 2}px`,
+            "--doc-font-family": fontConfig.fontFamily,
+            "--doc-font-size": `${book.typography.fontSize || 15.5}px`,
+            "--doc-line-height": `${book.typography.lineHeight || 1.60}`,
+            "--doc-p-spacing": `${book.typography.paragraphSpacing || 12}px`,
+            "--doc-text-align": book.typography.textAlignment || "left",
             fontFamily: fontConfig.fontFamily,
-            fontSize: `${book.typography.fontSize}px`,
-            lineHeight: book.typography.lineHeight,
-            textAlign: book.typography.textAlignment,
-            "--doc-p-spacing": `${book.typography.paragraphSpacing}px`,
+            fontSize: `${book.typography.fontSize || 15.5}px`,
+            lineHeight: `${book.typography.lineHeight || 1.60}`,
+            textAlign: book.typography.textAlignment || "left",
             width: "100%",
             maxWidth: `${pageMetrics.pageWidth}px`,
             minHeight: `${pageMetrics.pageHeight}px`,
             maxHeight: `${pageMetrics.pageHeight}px`,
             height: `${pageMetrics.pageHeight}px`,
-            aspectRatio: `${pageMetrics.width} / ${pageMetrics.height}`,
-            paddingTop: `${margins.top}px`,
-            paddingBottom: `${margins.bottom}px`,
-            paddingLeft: `${margins.left}px`,
-            paddingRight: `${margins.right}px`,
+            padding: `${margins.top}px ${margins.right}px ${margins.bottom}px ${margins.left}px`,
             ...style,
           } as React.CSSProperties
         }
@@ -93,12 +99,18 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
         {/* Tactile paper light sheen overlay */}
         <div className={styles.paperLight} aria-hidden="true" />
 
-        {/* Running Header */}
-        <header className={styles.pageHeader}>
+        {/* Running Header - absolutely positioned outside content flow */}
+        <header
+          className={styles.pageHeader}
+          style={{
+            left: `${margins.left}px`,
+            right: `${margins.right}px`,
+          }}
+        >
           <span className={styles.headerText}>{runningTitle || book.title}</span>
         </header>
 
-        {/* Hard-bounded Page Content Body */}
+        {/* Page Content Body */}
         <main className={`${styles.pageContent} booknote-prose`}>
           {isEndCover ? (
             <p className={styles.endNote}>
@@ -111,11 +123,16 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
           )}
         </main>
 
-        {/* Page Footer */}
+        {/* Page Footer - absolutely positioned outside content flow */}
         {book.pageSettings?.showPageNumbers && !isEndCover && (
-          <footer className={styles.pageFooter}>
+          <footer
+            className={styles.pageFooter}
+            style={{
+              right: `${margins.right}px`,
+            }}
+          >
             <span className={styles.pageNumber}>
-              {totalPages ? `Page ${pageNumber} of ${totalPages}` : pageNumber}
+              {totalPages ? `Page ${pageNumber} of ${totalPages}` : `Page ${pageNumber}`}
             </span>
           </footer>
         )}

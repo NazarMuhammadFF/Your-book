@@ -17,9 +17,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "serif",
-      fontSize: 17,
-      lineHeight: 1.7,
-      paragraphSpacing: 18,
+      fontSize: 15.5,
+      lineHeight: 1.60,
+      paragraphSpacing: 12,
       textAlignment: "left",
     },
     pageSettings: {
@@ -52,9 +52,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "serif",
-      fontSize: 16,
-      lineHeight: 1.65,
-      paragraphSpacing: 16,
+      fontSize: 15.5,
+      lineHeight: 1.60,
+      paragraphSpacing: 12,
       textAlignment: "left",
     },
     pageSettings: {
@@ -87,9 +87,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "sans",
-      fontSize: 16.5,
-      lineHeight: 1.65,
-      paragraphSpacing: 16,
+      fontSize: 15,
+      lineHeight: 1.55,
+      paragraphSpacing: 10,
       textAlignment: "left",
     },
     pageSettings: {
@@ -122,9 +122,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "serif",
-      fontSize: 17,
-      lineHeight: 1.75,
-      paragraphSpacing: 20,
+      fontSize: 15.5,
+      lineHeight: 1.62,
+      paragraphSpacing: 12,
       textAlignment: "left",
     },
     pageSettings: {
@@ -157,9 +157,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "mono",
-      fontSize: 15,
-      lineHeight: 1.6,
-      paragraphSpacing: 16,
+      fontSize: 14,
+      lineHeight: 1.50,
+      paragraphSpacing: 10,
       textAlignment: "left",
     },
     pageSettings: {
@@ -192,9 +192,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "serif",
-      fontSize: 16,
-      lineHeight: 1.68,
-      paragraphSpacing: 18,
+      fontSize: 15.5,
+      lineHeight: 1.60,
+      paragraphSpacing: 12,
       textAlignment: "left",
     },
     pageSettings: {
@@ -227,9 +227,9 @@ export const INITIAL_MOCK_BOOKS: Book[] = [
     },
     typography: {
       fontFamilyId: "serif",
-      fontSize: 16.5,
-      lineHeight: 1.7,
-      paragraphSpacing: 16,
+      fontSize: 15.5,
+      lineHeight: 1.60,
+      paragraphSpacing: 12,
       textAlignment: "left",
     },
     pageSettings: {

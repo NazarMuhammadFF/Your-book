@@ -18,20 +18,20 @@ export interface PageMargins {
 }
 
 export const DEFAULT_PAGE_MARGINS: Record<"compact" | "normal" | "spacious", PageMargins> = {
-  compact: { top: 30, bottom: 26, left: 28, right: 28 },
-  normal: { top: 40, bottom: 32, left: 36, right: 36 },
-  spacious: { top: 50, bottom: 40, left: 44, right: 44 },
+  compact: { top: 28, bottom: 24, left: 28, right: 28 },
+  normal: { top: 36, bottom: 32, left: 36, right: 36 },
+  spacious: { top: 46, bottom: 40, left: 44, right: 44 },
 };
 
 export const FONT_SIZE_OPTIONS = [
-  8, 9, 10, 11, 12, 14, 16, 17, 18, 20, 24, 28, 32, 36, 48, 60, 72,
+  9, 10, 11, 12, 13, 14, 15, 15.5, 16, 17, 18, 20, 22, 24, 28, 32, 36, 48,
 ] as const;
 
 export interface BookTypography {
   fontFamilyId: string;
-  fontSize: number; // in px, default 17
-  lineHeight: number; // unitless, default 1.68
-  paragraphSpacing: number; // in px, default 18
+  fontSize: number; // in px, default 15.5
+  lineHeight: number; // unitless, default 1.60
+  paragraphSpacing: number; // in px, default 12
   textAlignment: "left" | "center" | "right" | "justify";
   margins?: PageMargins;
 }

@@ -39,6 +39,15 @@
   margin-bottom: 48px;
 }
 
+.spreadContainer :global(.booknote-prose.ProseMirror) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px 44px;
+  max-width: 1400px;
+}
+
 /* Status Bar */
 .statusBar {
   display: flex;

@@ -61,9 +61,9 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
     const textContent = node.content?.map((c, i) =>
       c.text ? <React.Fragment key={i}>{renderInlineMarks(c.text, c.marks)}</React.Fragment> : null
     );
-    const textAlign = node.attrs?.textAlign || "inherit";
+    const textAlign = node.attrs?.textAlign;
     return (
-      <p key={index} style={{ textAlign }} className={styles.paragraph}>
+      <p key={index} style={textAlign ? { textAlign } : undefined}>
         {textContent || "\u00A0"}
       </p>
     );
@@ -71,7 +71,7 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 
   if (node.type === "blockquote") {
     return (
-      <blockquote key={index} className={styles.quote}>
+      <blockquote key={index}>
         {node.content?.map((child, i) => renderNodeContent(child, i))}
       </blockquote>
     );
@@ -79,7 +79,7 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 
   if (node.type === "bulletList") {
     return (
-      <ul key={index} className={styles.list}>
+      <ul key={index}>
         {node.content?.map((item, i) => (
           <li key={i}>{item.content?.map((c, ci) => renderNodeContent(c, ci))}</li>
         ))}
@@ -89,7 +89,7 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 
   if (node.type === "orderedList") {
     return (
-      <ol key={index} className={styles.list}>
+      <ol key={index}>
         {node.content?.map((item, i) => (
           <li key={i}>{item.content?.map((c, ci) => renderNodeContent(c, ci))}</li>
         ))}
@@ -99,11 +99,11 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 
   if (node.type === "taskList") {
     return (
-      <ul key={index} data-type="taskList" className={styles.taskList}>
+      <ul key={index} data-type="taskList">
         {node.content?.map((item, i) => {
           const checked = Boolean(item.attrs?.checked);
           return (
-            <li key={i} className={styles.taskItem}>
+            <li key={i} data-type="taskItem" data-checked={checked}>
               <label>
                 <input type="checkbox" checked={checked} readOnly />
               </label>
@@ -191,7 +191,7 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 }
 
 export const ReaderPage = React.forwardRef<HTMLDivElement, ReaderPageProps>(
-  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover, scale = 1 }, ref) => {
+  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover }, ref) => {
     const side = pageNumber % 2 === 1 ? "left" : "right";
     const pageMetrics = getBookPageMetrics(book);
 
@@ -219,8 +219,6 @@ export const ReaderPage = React.forwardRef<HTMLDivElement, ReaderPageProps>(
           style={{
             width: `${pageMetrics.pageWidth}px`,
             height: `${pageMetrics.pageHeight}px`,
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
             position: "absolute",
             top: 0,
             left: 0,

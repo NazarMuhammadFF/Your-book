@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/core";
 import { Node as ProseMirrorNode, Schema } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
-import { Book, getBookPageMetrics, getBookPageMargins } from "../../books/types/book";
+import { Book, getBookPageMargins } from "../../books/types/book";
 import { computePaginationMetrics, estimateNodeHeightExact } from "../utils/pagination";
 
 export interface PaginationExtensionOptions {
@@ -207,13 +207,7 @@ function reflowPages(
   const { doc, schema } = state;
   if (doc.type.name !== "doc") return false;
 
-  const pageMetrics = getBookPageMetrics(options.book);
   const margins = getBookPageMargins(options.book);
-
-  const maxContentHeight = Math.max(
-    140,
-    pageMetrics.pageHeight - margins.top - margins.bottom
-  );
 
   const pageDoms = Array.from(
     view.dom.querySelectorAll<HTMLElement>(".booknote-page-node")

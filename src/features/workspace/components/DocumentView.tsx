@@ -3,6 +3,8 @@ import { EditorContent, JSONContent } from "@tiptap/react";
 import { Book, BookTypography, getBookPageMetrics, getBookPageMargins } from "../../books/types/book";
 import { useBookEditor } from "../../document/hooks/useBookEditor";
 import { EditorToolbar } from "../../document/components/EditorToolbar";
+import { EditorBubbleMenu } from "../../document/components/EditorBubbleMenu";
+import { SlashCommandMenu } from "../../document/components/SlashCommandMenu";
 import { ImageInsertDialog } from "../../document/components/ImageInsertDialog";
 import { calculateDocumentStats } from "../../document/utils/docStats";
 import { FONT_FAMILIES } from "../../../design/typography";
@@ -21,6 +23,7 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
   onUpdateContent,
   onUpdateTypography,
 }) => {
+  const [layoutMode, setLayoutMode] = useState<"vertical" | "spread">("vertical");
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<string>("Just now");
   const [pageCount, setPageCount] = useState<number>(() => {
@@ -75,7 +78,7 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
 
   return (
     <div
-      className={styles.container}
+      className={`${styles.container} ${layoutMode === "spread" ? styles.spreadContainer : ""}`}
       style={
         {
           "--page-width": `${pageMetrics.pageWidth}px`,
@@ -86,18 +89,22 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
           "--page-pad-right": `${margins.right}px`,
           "--page-pad-x": `${(margins.left + margins.right) / 2}px`,
           "--doc-font-family": fontConfig.fontFamily,
-          "--doc-font-size": `${typography.fontSize || 17}px`,
-          "--doc-line-height": `${typography.lineHeight || 1.68}`,
-          "--doc-p-spacing": `${typography.paragraphSpacing || 18}px`,
+          "--doc-font-size": `${typography.fontSize || 15.5}px`,
+          "--doc-line-height": `${typography.lineHeight || 1.60}`,
+          "--doc-p-spacing": `${typography.paragraphSpacing || 12}px`,
           "--doc-text-align": typography.textAlignment || "left",
         } as React.CSSProperties
       }
     >
-      {/* Top Floating Formatting Toolbar with Integrated Typography Controls */}
+      {/* Top Floating Formatting Toolbar */}
       <div className={styles.toolbarContainer}>
         <EditorToolbar
           editor={editor}
           book={book}
+          layoutMode={layoutMode}
+          onToggleLayoutMode={() =>
+            setLayoutMode((m) => (m === "vertical" ? "spread" : "vertical"))
+          }
           onUpdateTypography={onUpdateTypography}
           onOpenImageDialog={() => setIsImageDialogOpen(true)}
         />
@@ -105,6 +112,11 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
 
       {/* Real Single Paginated ProseMirror Editor View */}
       <div className={styles.editorHost}>
+        <EditorBubbleMenu editor={editor} />
+        <SlashCommandMenu
+          editor={editor}
+          onOpenImageDialog={() => setIsImageDialogOpen(true)}
+        />
         <EditorContent editor={editor} />
       </div>
 
