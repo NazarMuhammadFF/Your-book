@@ -44,6 +44,7 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
   onPageIndexChange,
 }) => {
   const flipBookRef = useRef<FlipBookRef>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState<number>(1);
   const [currentPage, setCurrentPage] = useState<number>(pageIndex);
@@ -53,6 +54,9 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
     () => paginateDocument(content, book),
     [content, book]
   );
+
+  const targetSpreadWidth = pageMetrics.spreadWidth + 32;
+  const targetSpreadHeight = pageMetrics.pageHeight + 28;
 
   // Ensure an even number of pages so Book View is always an open 2-page spread
   const displayPages = useMemo(() => {
@@ -69,22 +73,22 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
     return pages;
   }, [paginatedPages]);
 
-  // Responsive scale measurement
+  // Responsive scale measurement from outer container
   useLayoutEffect(() => {
-    if (!frameRef.current) return;
+    if (!containerRef.current) return;
     const updateScale = () => {
-      if (!frameRef.current) return;
-      const containerWidth = frameRef.current.clientWidth - 32;
-      if (containerWidth > 0 && pageMetrics.spreadWidth > 0) {
-        const nextScale = Math.min(1, Math.max(0.35, containerWidth / pageMetrics.spreadWidth));
+      if (!containerRef.current) return;
+      const availableWidth = containerRef.current.clientWidth - 32;
+      if (availableWidth > 0 && targetSpreadWidth > 0) {
+        const nextScale = Math.min(1, Math.max(0.35, availableWidth / targetSpreadWidth));
         setScale(nextScale);
       }
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
-    observer.observe(frameRef.current);
+    observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [pageMetrics.spreadWidth]);
+  }, [targetSpreadWidth]);
 
   const handleFlip = (e: { data: number }) => {
     setCurrentPage(e.data);
@@ -126,56 +130,63 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
 
   return (
     <section
+      ref={containerRef}
       className={styles.reader}
       aria-label={`Interactive Book View for ${book.title}`}
     >
-      {/* 3D Hardcover Container */}
+      {/* 3D Hardcover Container with Scaled Box */}
       <div
-        ref={frameRef}
-        className={styles.hardcoverWrapper}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        aria-label="Book pages. Use Left and Right Arrow keys to navigate."
-        style={
-          scale < 1
-            ? {
-                transform: `scale(${scale})`,
-                transformOrigin: "top center",
-              }
-            : undefined
-        }
+        className={styles.stageWrapper}
+        style={{
+          width: `${Math.round(targetSpreadWidth * scale)}px`,
+          height: `${Math.round(targetSpreadHeight * scale)}px`,
+        }}
       >
-        <HTMLFlipBook
-          ref={flipBookRef}
-          width={pageMetrics.pageWidth}
-          height={pageMetrics.pageHeight}
-          size="fixed"
-          minWidth={280}
-          maxWidth={pageMetrics.pageWidth}
-          minHeight={380}
-          maxHeight={pageMetrics.pageHeight}
-          drawShadow={true}
-          flippingTime={600}
-          usePortrait={false}
-          startPage={currentPage}
-          isMouseMoveEvent={true}
-          showCover={false}
-          mobileScrollSupport={true}
-          onFlip={handleFlip}
+        <div
+          ref={frameRef}
+          className={styles.hardcoverWrapper}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          aria-label="Book pages. Use Left and Right Arrow keys to navigate."
+          style={{
+            width: `${targetSpreadWidth}px`,
+            height: `${targetSpreadHeight}px`,
+            transform: scale < 1 ? `scale(${scale})` : undefined,
+            transformOrigin: "top left",
+          }}
         >
-          {displayPages.map((page) => (
-            <PageSlot key={`interior-${page.pageNumber}`} density="soft">
-              <ReaderPage
-                book={book}
-                pageNumber={page.pageNumber}
-                totalPages={displayPages.length}
-                nodes={page.nodes}
-                runningTitle={book.title}
-                isEndCover={!page.hasContent && page.pageNumber > paginatedPages.length}
-              />
-            </PageSlot>
-          ))}
-        </HTMLFlipBook>
+          <HTMLFlipBook
+            ref={flipBookRef}
+            width={pageMetrics.pageWidth}
+            height={pageMetrics.pageHeight}
+            size="fixed"
+            minWidth={280}
+            maxWidth={pageMetrics.pageWidth}
+            minHeight={380}
+            maxHeight={pageMetrics.pageHeight}
+            drawShadow={true}
+            flippingTime={600}
+            usePortrait={false}
+            startPage={currentPage}
+            isMouseMoveEvent={true}
+            showCover={false}
+            mobileScrollSupport={true}
+            onFlip={handleFlip}
+          >
+            {displayPages.map((page) => (
+              <PageSlot key={`interior-${page.pageNumber}`} density="soft">
+                <ReaderPage
+                  book={book}
+                  pageNumber={page.pageNumber}
+                  totalPages={displayPages.length}
+                  nodes={page.nodes}
+                  runningTitle={book.title}
+                  isEndCover={!page.hasContent && page.pageNumber > paginatedPages.length}
+                />
+              </PageSlot>
+            ))}
+          </HTMLFlipBook>
+        </div>
       </div>
 
       {/* Navigation Controls */}
