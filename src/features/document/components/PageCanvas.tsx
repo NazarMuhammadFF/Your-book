@@ -1,5 +1,5 @@
 import React from "react";
-import { Book, getBookPageMetrics } from "../../books/types/book";
+import { Book, getBookPageMetrics, getBookPageMargins } from "../../books/types/book";
 import { FONT_FAMILIES } from "../../../design/typography";
 import { JSONContent } from "@tiptap/react";
 import { renderNodeContent } from "../../reader/components/ReaderPage";
@@ -46,6 +46,7 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
     ref
   ) => {
     const pageMetrics = getBookPageMetrics(book);
+    const margins = getBookPageMargins(book);
     const fontConfig =
       FONT_FAMILIES.find((font) => font.id === book.typography.fontFamilyId) ??
       FONT_FAMILIES[0];
@@ -68,7 +69,6 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
         onClick={onClick}
         onPointerDown={onPointerDown}
         onMouseDown={onMouseDown}
-        data-density="soft"
         style={
           {
             fontFamily: fontConfig.fontFamily,
@@ -82,6 +82,10 @@ export const PageCanvas = React.forwardRef<HTMLDivElement, PageCanvasProps>(
             maxHeight: `${pageMetrics.pageHeight}px`,
             height: `${pageMetrics.pageHeight}px`,
             aspectRatio: `${pageMetrics.width} / ${pageMetrics.height}`,
+            paddingTop: `${margins.top}px`,
+            paddingBottom: `${margins.bottom}px`,
+            paddingLeft: `${margins.left}px`,
+            paddingRight: `${margins.right}px`,
             ...style,
           } as React.CSSProperties
         }

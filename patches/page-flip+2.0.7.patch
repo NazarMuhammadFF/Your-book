@@ -1,9 +1,9 @@
 diff --git a/node_modules/page-flip/dist/js/page-flip.patched.js b/node_modules/page-flip/dist/js/page-flip.patched.js
 new file mode 100644
-index 0000000..9bbea6f
+index 0000000..690e251
 --- /dev/null
 +++ b/node_modules/page-flip/dist/js/page-flip.patched.js
-@@ -0,0 +1,2816 @@
+@@ -0,0 +1,2818 @@
 +// node_modules/page-flip/src/Page/Page.ts
 +var Page = class {
 +  /** State of the page on the basis of which rendering */
@@ -865,9 +865,10 @@ index 0000000..9bbea6f
 +   * @param {FlipCorner} corner - Active page corner when turning
 +   */
 +  flipNext(corner) {
++    const rect = this.render.getRect();
 +    this.flip({
-+      x: this.render.getRect().left + this.render.getRect().pageWidth * 2 - 10,
-+      y: corner === "top" /* TOP */ ? 1 : this.render.getRect().height - 2
++      x: rect.left + rect.pageWidth * 2 - 10,
++      y: rect.top + (corner === "top" /* TOP */ ? 1 : rect.height - 2)
 +    });
 +  }
 +  /**
@@ -876,9 +877,10 @@ index 0000000..9bbea6f
 +   * @param {FlipCorner} corner - Active page corner when turning
 +   */
 +  flipPrev(corner) {
++    const rect = this.render.getRect();
 +    this.flip({
-+      x: 10,
-+      y: corner === "top" /* TOP */ ? 1 : this.render.getRect().height - 2
++      x: rect.left + 10,
++      y: rect.top + (corner === "top" /* TOP */ ? 1 : rect.height - 2)
 +    });
 +  }
 +  /**
@@ -2820,6 +2822,36 @@ index 0000000..9bbea6f
 +export {
 +  PageFlip
 +};
+diff --git a/node_modules/page-flip/src/Flip/Flip.ts b/node_modules/page-flip/src/Flip/Flip.ts
+index d918d65..5587ec3 100644
+--- a/node_modules/page-flip/src/Flip/Flip.ts
++++ b/node_modules/page-flip/src/Flip/Flip.ts
+@@ -241,9 +241,10 @@ export class Flip {
+      * @param {FlipCorner} corner - Active page corner when turning
+      */
+     public flipNext(corner: FlipCorner): void {
++        const rect = this.render.getRect();
+         this.flip({
+-            x: this.render.getRect().left + this.render.getRect().pageWidth * 2 - 10,
+-            y: corner === FlipCorner.TOP ? 1 : this.render.getRect().height - 2,
++            x: rect.left + rect.pageWidth * 2 - 10,
++            y: rect.top + (corner === FlipCorner.TOP ? 1 : rect.height - 2),
+         });
+     }
+ 
+@@ -253,9 +254,10 @@ export class Flip {
+      * @param {FlipCorner} corner - Active page corner when turning
+      */
+     public flipPrev(corner: FlipCorner): void {
++        const rect = this.render.getRect();
+         this.flip({
+-            x: 10,
+-            y: corner === FlipCorner.TOP ? 1 : this.render.getRect().height - 2,
++            x: rect.left + 10,
++            y: rect.top + (corner === FlipCorner.TOP ? 1 : rect.height - 2),
+         });
+     }
+ 
 diff --git a/node_modules/page-flip/src/PageFlip.ts b/node_modules/page-flip/src/PageFlip.ts
 index 87fe9f2..dc33ad1 100644
 --- a/node_modules/page-flip/src/PageFlip.ts

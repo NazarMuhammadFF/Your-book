@@ -1,0 +1,238 @@
+.wrapper {
+  position: relative;
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: border-box;
+  max-width: 100%;
+  transition: box-shadow 0.15s ease;
+  user-select: none;
+}
+
+/* Wrap Modes matching Microsoft Word */
+.wrapLeft {
+  float: left !important;
+  margin: 6px 20px 14px 0 !important;
+  clear: none;
+}
+
+.wrapRight {
+  float: right !important;
+  margin: 6px 0 14px 20px !important;
+  clear: none;
+}
+
+.wrapInline {
+  display: block !important;
+  float: none !important;
+  clear: both !important;
+  margin: 14px auto !important;
+}
+
+.wrapBreak {
+  display: block !important;
+  width: 100% !important;
+  float: none !important;
+  clear: both !important;
+  margin: 16px 0 !important;
+}
+
+.imageContainer {
+  position: relative;
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+}
+
+.imageElement {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm, 4px);
+  pointer-events: auto;
+}
+
+/* Active / Selected Outline */
+.selected .imageContainer {
+  outline: 2px solid var(--accent-primary, #9e5b32);
+  outline-offset: 2px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.resizing .imageContainer {
+  outline: 2px dashed var(--accent-primary, #9e5b32);
+  outline-offset: 2px;
+}
+
+/* Resize Handles */
+.handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: white;
+  border: 2px solid var(--accent-primary, #9e5b32);
+  border-radius: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  z-index: 30;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.handle:hover {
+  background: var(--accent-primary, #9e5b32);
+  transform: scale(1.2);
+}
+
+.handleNW {
+  top: -5px;
+  left: -5px;
+  cursor: nwse-resize;
+}
+
+.handleNE {
+  top: -5px;
+  right: -5px;
+  cursor: nesw-resize;
+}
+
+.handleSW {
+  bottom: -5px;
+  left: -5px;
+  cursor: nesw-resize;
+}
+
+.handleSE {
+  bottom: -5px;
+  right: -5px;
+  cursor: nwse-resize;
+}
+
+.handleW {
+  top: 50%;
+  left: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.handleW:hover {
+  transform: translateY(-50%) scale(1.2);
+}
+
+.handleE {
+  top: 50%;
+  right: -5px;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.handleE:hover {
+  transform: translateY(-50%) scale(1.2);
+}
+
+/* Dimension Badge while resizing */
+.sizeBadge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 3px 7px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-family: var(--font-sans, system-ui);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 40;
+  letter-spacing: 0.02em;
+}
+
+/* Floating Quick Toolbar on Selected Image */
+.floatingToolbar {
+  position: absolute;
+  top: -42px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e5e0d8);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbarSeparator {
+  width: 1px;
+  height: 16px;
+  background: var(--border-subtle, #e5e0d8);
+  margin: 0 4px;
+}
+
+.toolbarBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 6px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-secondary, #6a645d);
+  font-family: var(--font-sans, system-ui);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.toolbarBtn:hover {
+  background: var(--bg-surface-hover, #f3ede4);
+  color: var(--text-primary, #2a2723);
+}
+
+.toolbarBtnActive {
+  background: color-mix(in srgb, var(--accent-primary, #9e5b32) 16%, transparent);
+  color: var(--accent-primary, #9e5b32);
+}
+
+.toolbarBtnDanger:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Caption */
+.captionWrapper {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.captionInput {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-sans, system-ui);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-secondary, #6a645d);
+  text-align: center;
+  padding: 2px 4px;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.15s ease;
+}
+
+.captionInput:focus,
+.captionInput:hover {
+  border-bottom-color: var(--border-medium, #c8c2b7);
+}

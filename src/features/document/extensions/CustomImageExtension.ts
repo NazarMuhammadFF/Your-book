@@ -1,4 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { Plugin } from "@tiptap/pm/state";
+import { ResizableImageNodeView } from "../components/ResizableImageNodeView";
 
 export interface CustomImageOptions {
   inline: boolean;
@@ -16,6 +19,7 @@ declare module "@tiptap/core" {
         caption?: string;
         width?: string | number;
         align?: "left" | "center" | "right" | "full";
+        wrapMode?: "inline" | "wrap-left" | "wrap-right" | "break-text";
       }) => ReturnType;
       updateCustomImage: (options: {
         alt?: string;
@@ -23,6 +27,7 @@ declare module "@tiptap/core" {
         caption?: string;
         width?: string | number;
         align?: "left" | "center" | "right" | "full";
+        wrapMode?: "inline" | "wrap-left" | "wrap-right" | "break-text";
       }) => ReturnType;
     };
   }
@@ -58,7 +63,7 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
         default: "",
       },
       width: {
-        default: "100%",
+        default: "50%",
         renderHTML: (attributes) => {
           return {
             "data-width": attributes.width,
@@ -66,10 +71,18 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
         },
       },
       align: {
-        default: "center",
+        default: "left",
         renderHTML: (attributes) => {
           return {
             "data-align": attributes.align,
+          };
+        },
+      },
+      wrapMode: {
+        default: "wrap-left",
+        renderHTML: (attributes) => {
+          return {
+            "data-wrap": attributes.wrapMode,
           };
         },
       },
@@ -89,8 +102,9 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
             alt: img?.getAttribute("alt"),
             title: img?.getAttribute("title"),
             caption: captionEl?.textContent || element.getAttribute("data-caption") || "",
-            width: element.getAttribute("data-width") || "100%",
-            align: element.getAttribute("data-align") || "center",
+            width: element.getAttribute("data-width") || "50%",
+            align: element.getAttribute("data-align") || "left",
+            wrapMode: element.getAttribute("data-wrap") || "wrap-left",
           };
         },
       },
@@ -103,8 +117,9 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
             alt: element.getAttribute("alt"),
             title: element.getAttribute("title"),
             caption: element.getAttribute("data-caption") || "",
-            width: element.getAttribute("data-width") || "100%",
-            align: element.getAttribute("data-align") || "center",
+            width: element.getAttribute("data-width") || "50%",
+            align: element.getAttribute("data-align") || "left",
+            wrapMode: element.getAttribute("data-wrap") || "wrap-left",
           };
         },
       },
@@ -112,26 +127,47 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
   },
 
   renderHTML({ HTMLAttributes, node }) {
-    const { src, alt, title, caption, width, align } = node.attrs;
+    const { src, alt, title, caption, width, align, wrapMode } = node.attrs;
 
-    let widthStyle = "100%";
+    let widthStyle = "50%";
     if (typeof width === "number") widthStyle = `${width}px`;
     else if (typeof width === "string") {
       if (width === "full") widthStyle = "100%";
       else widthStyle = width;
     }
 
-    let marginStyle = "0 auto";
-    if (align === "left") marginStyle = "0 auto 0 0";
-    else if (align === "right") marginStyle = "0 0 0 auto";
+    const effectiveWrap = wrapMode || (align === "right" ? "wrap-right" : align === "center" ? "inline" : "wrap-left");
+
+    let floatStyle: "left" | "right" | "none" = "none";
+    let marginStyle = "12px auto";
+    let clearStyle = "both";
+    let displayStyle = "block";
+
+    if (effectiveWrap === "wrap-left") {
+      floatStyle = "left";
+      marginStyle = "6px 20px 14px 0";
+      clearStyle = "none";
+      displayStyle = "inline-block";
+    } else if (effectiveWrap === "wrap-right") {
+      floatStyle = "right";
+      marginStyle = "6px 0 14px 20px";
+      clearStyle = "none";
+      displayStyle = "inline-block";
+    } else if (effectiveWrap === "break-text") {
+      displayStyle = "block";
+      widthStyle = "100%";
+      marginStyle = "16px 0";
+      clearStyle = "both";
+    }
 
     const figureAttributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
       "data-type": "book-image",
-      "data-align": align || "center",
-      "data-width": width || "100%",
+      "data-align": align || "left",
+      "data-wrap": effectiveWrap,
+      "data-width": width || "50%",
       "data-caption": caption || "",
-      class: `book-figure book-figure-align-${align || "center"}`,
-      style: `max-width: ${widthStyle}; margin: ${marginStyle};`,
+      class: `book-figure book-figure-${effectiveWrap}`,
+      style: `width: ${widthStyle}; max-width: 100%; float: ${floatStyle}; clear: ${clearStyle}; margin: ${marginStyle}; display: ${displayStyle};`,
     });
 
     const imgAttributes = {
@@ -154,6 +190,10 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
     return ["figure", figureAttributes, ["img", imgAttributes]];
   },
 
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageNodeView);
+  },
+
   addCommands() {
     return {
       setCustomImage:
@@ -161,7 +201,12 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: options,
+            attrs: {
+              width: "50%",
+              align: "left",
+              wrapMode: "wrap-left",
+              ...options,
+            },
           });
         },
       updateCustomImage:
@@ -171,4 +216,75 @@ export const CustomImageExtension = Node.create<CustomImageOptions>({
         },
     };
   },
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handleDOMEvents: {
+            drop: (view, event) => {
+              const hasFiles = event.dataTransfer?.files && event.dataTransfer.files.length > 0;
+              if (!hasFiles) return false;
+              const file = event.dataTransfer!.files[0];
+              if (!file || !file.type.startsWith("image/")) return false;
+
+              event.preventDefault();
+              const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+              const reader = new FileReader();
+              reader.onload = (readerEvent) => {
+                const dataUrl = readerEvent.target?.result as string;
+                if (dataUrl) {
+                  const node = view.state.schema.nodes.image.create({
+                    src: dataUrl,
+                    alt: file.name.replace(/\.[^/.]+$/, ""),
+                    width: "50%",
+                    align: "left",
+                    wrapMode: "wrap-left",
+                  });
+                  const insertPos = coordinates ? coordinates.pos : view.state.selection.from;
+                  const tr = view.state.tr.insert(insertPos, node);
+                  view.dispatch(tr);
+                }
+              };
+              reader.readAsDataURL(file);
+              return true;
+            },
+            paste: (view, event) => {
+              const items = event.clipboardData?.items;
+              if (!items) return false;
+
+              for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.startsWith("image/")) {
+                  const file = item.getAsFile();
+                  if (!file) continue;
+
+                  event.preventDefault();
+                  const reader = new FileReader();
+                  reader.onload = (readerEvent) => {
+                    const dataUrl = readerEvent.target?.result as string;
+                    if (dataUrl) {
+                      const node = view.state.schema.nodes.image.create({
+                        src: dataUrl,
+                        alt: "Pasted image",
+                        width: "50%",
+                        align: "left",
+                        wrapMode: "wrap-left",
+                      });
+                      const tr = view.state.tr.insert(view.state.selection.from, node);
+                      view.dispatch(tr);
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                  return true;
+                }
+              }
+              return false;
+            },
+          },
+        },
+      }),
+    ];
+  },
 });
+

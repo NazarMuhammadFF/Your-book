@@ -30,67 +30,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Multi-Page Continuous Container */
-.multiPageContainer {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  width: 100%;
-  margin: 0 auto 48px;
-  align-items: center;
-}
-
-.canvasCard {
-  width: 100%;
-  pointer-events: none;
-}
-
-.pagedEditor {
-  position: relative;
-  width: 100%;
-}
-
-.pageStack {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-}
-
+/* Host wrapper for the live Tiptap ProseMirror pages */
 .editorHost {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
-}
-
-.editorHost > div {
-  min-height: 100%;
-}
-
-.editorHost :global(.ProseMirror) {
-  width: var(--editor-page-width);
-  min-height: 100%;
-  padding:
-    var(--editor-content-top)
-    var(--editor-content-horizontal)
-    0;
-  box-sizing: border-box;
-  color: var(--paper-text, #2a2723);
-}
-
-.editorHost :global(.booknote-prose h1),
-.editorHost :global(.booknote-prose h2),
-.editorHost :global(.booknote-prose h3),
-.editorHost :global(.booknote-prose blockquote),
-.editorHost :global(.booknote-prose code) {
-  color: inherit;
-}
-
-.editorHost :global(.booknote-prose blockquote) {
-  background: color-mix(in srgb, var(--paper-bg, #fbf9f4) 88%, var(--accent-primary));
+  margin-bottom: 48px;
 }
 
 /* Status Bar */

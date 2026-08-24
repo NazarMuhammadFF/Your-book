@@ -10,12 +10,30 @@ export interface BookCover {
   badgeText?: string;
 }
 
+export interface PageMargins {
+  top: number; // in px (e.g. 10 to 100)
+  bottom: number; // in px (e.g. 10 to 100)
+  left: number; // in px (e.g. 10 to 140)
+  right: number; // in px (e.g. 10 to 140)
+}
+
+export const DEFAULT_PAGE_MARGINS: Record<"compact" | "normal" | "spacious", PageMargins> = {
+  compact: { top: 30, bottom: 26, left: 28, right: 28 },
+  normal: { top: 40, bottom: 32, left: 36, right: 36 },
+  spacious: { top: 50, bottom: 40, left: 44, right: 44 },
+};
+
+export const FONT_SIZE_OPTIONS = [
+  8, 9, 10, 11, 12, 14, 16, 17, 18, 20, 24, 28, 32, 36, 48, 60, 72,
+] as const;
+
 export interface BookTypography {
   fontFamilyId: string;
   fontSize: number; // in px, default 17
-  lineHeight: number; // unitless, default 1.65
-  paragraphSpacing: number; // in px, default 16
-  textAlignment: "left" | "justify";
+  lineHeight: number; // unitless, default 1.68
+  paragraphSpacing: number; // in px, default 18
+  textAlignment: "left" | "center" | "right" | "justify";
+  margins?: PageMargins;
 }
 
 export type PageSizePreset = "a6" | "a5" | "b5" | "a4" | "letter" | "legal" | "standard" | "novel" | "compact";
@@ -43,6 +61,7 @@ export interface BookPageSettings {
   showPageNumbers: boolean;
   pagesOffset?: number; // Inset from cover edge in px (e.g. 2 to 10px)
   coverThickness?: number; // Front & back cover board thickness in px (e.g. 1 to 8px)
+  margins?: PageMargins;
 }
 
 export interface BookVisualDimensions {
@@ -65,6 +84,31 @@ export interface Book {
   content?: JSONContent;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Returns the effective page margins (top, bottom, left, right) for a book,
+ * falling back to preset defaults if custom margins are not defined.
+ */
+export function getBookPageMargins(book: Book): PageMargins {
+  if (book.typography?.margins) {
+    return {
+      top: Math.max(8, Math.min(120, book.typography.margins.top ?? 40)),
+      bottom: Math.max(8, Math.min(120, book.typography.margins.bottom ?? 32)),
+      left: Math.max(8, Math.min(140, book.typography.margins.left ?? 36)),
+      right: Math.max(8, Math.min(140, book.typography.margins.right ?? 36)),
+    };
+  }
+  if (book.pageSettings?.margins) {
+    return {
+      top: Math.max(8, Math.min(120, book.pageSettings.margins.top ?? 40)),
+      bottom: Math.max(8, Math.min(120, book.pageSettings.margins.bottom ?? 32)),
+      left: Math.max(8, Math.min(140, book.pageSettings.margins.left ?? 36)),
+      right: Math.max(8, Math.min(140, book.pageSettings.margins.right ?? 36)),
+    };
+  }
+  const preset = book.pageSettings?.pageMargin || "normal";
+  return DEFAULT_PAGE_MARGINS[preset] || DEFAULT_PAGE_MARGINS.normal;
 }
 
 /**

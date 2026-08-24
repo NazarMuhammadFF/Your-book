@@ -1,4 +1,4 @@
-export type BookFlipState = "idle" | "corner-preview" | "dragging" | "flipping";
+export type BookFlipState = "idle" | "dragging" | "flipping" | "corner-preview";
 
 export interface BookFlipSnapshot {
   currentPageIndex: number;
@@ -11,8 +11,8 @@ export interface BookFlipSnapshot {
 export interface BookFlipMountOptions {
   host: HTMLElement;
   pageElements: HTMLElement[];
-  initialPageIndex: number;
+  initialPageIndex?: number;
   pageWidth?: number;
   pageHeight?: number;
-  onSnapshotChange: (snapshot: BookFlipSnapshot) => void;
+  onSnapshotChange?: (snapshot: BookFlipSnapshot) => void;
 }

@@ -1,5 +1,5 @@
 import { JSONContent } from "@tiptap/react";
-import { Book, getBookPageMetrics } from "../../books/types/book";
+import { Book, getBookPageMetrics, getBookPageMargins } from "../../books/types/book";
 import { PaginatedPage } from "../types/document";
 import { FONT_FAMILIES } from "../../../design/typography";
 import { extractTextFromContent } from "./docStats";
@@ -20,29 +20,14 @@ export interface PaginationMetrics {
 export function computePaginationMetrics(book: Book): PaginationMetrics {
   const pageMetrics = getBookPageMetrics(book);
   const typography = book.typography;
-  const margin = book.pageSettings?.pageMargin || "normal";
+  const margins = getBookPageMargins(book);
 
-  // Exact padding matching PageCanvas.module.css
-  let horizontalPadding = 72;
-  let topPadding = 40;
-  let bottomPadding = 32;
-
-  if (margin === "compact") {
-    horizontalPadding = 56;
-    topPadding = 30;
-    bottomPadding = 26;
-  } else if (margin === "spacious") {
-    horizontalPadding = 88;
-    topPadding = 50;
-    bottomPadding = 40;
-  }
-
-  const contentTop = topPadding + 39;
-  const contentBottom = bottomPadding + 39;
+  const contentTop = margins.top + 45;
+  const contentBottom = margins.bottom + 45;
   const fontSize = typography.fontSize || 17;
   const lineHeight = typography.lineHeight || 1.65;
   const lineHeightPx = Math.round(fontSize * lineHeight);
-  const availableWidth = Math.max(160, pageMetrics.pageWidth - horizontalPadding);
+  const availableWidth = Math.max(160, pageMetrics.pageWidth - margins.left - margins.right);
   const availableHeight = Math.max(
     180,
     pageMetrics.pageHeight - contentTop - contentBottom - lineHeightPx
@@ -291,12 +276,18 @@ export function estimateNodeHeightExact(
 
   if (node.type === "image") {
     const customWidth = node.attrs?.width;
-    let height = Math.min(220, Math.round(metrics.availableWidth * 0.5));
+    const isWrap = node.attrs?.wrapMode === "wrap-left" || node.attrs?.wrapMode === "wrap-right";
+    let height = Math.min(240, Math.round(metrics.availableWidth * 0.45));
     if (typeof customWidth === "number") {
-      height = Math.round(customWidth * 0.55);
+      height = Math.round(customWidth * 0.65);
+    } else if (typeof customWidth === "string" && customWidth.endsWith("px")) {
+      height = Math.round(parseFloat(customWidth) * 0.65);
+    } else if (typeof customWidth === "string" && customWidth.endsWith("%")) {
+      height = Math.round(metrics.availableWidth * (parseFloat(customWidth) / 100) * 0.65);
     }
     const captionHeight = node.attrs?.caption ? 24 : 0;
-    return Math.min(metrics.availableHeight, height + captionHeight + 24);
+    const total = Math.min(metrics.availableHeight, height + captionHeight + 16);
+    return isWrap ? Math.round(total * 0.7) : total;
   }
 
   if (node.type === "horizontalRule") {
@@ -332,6 +323,27 @@ export function paginateDocument(
         hasContent: false,
       },
     ];
+  }
+
+  // If doc already contains page nodes, map them directly 1-to-1!
+  const hasPageNodes = rawNodes.some((n) => n.type === "page");
+  if (hasPageNodes) {
+    const pages: PaginatedPage[] = [];
+    rawNodes.forEach((node, index) => {
+      if (node.type === "page") {
+        const pageChildren = node.content || [];
+        const pageText = extractTextFromContent({ type: "doc", content: pageChildren });
+        const words = pageText.trim() ? pageText.trim().split(/\s+/).length : 0;
+        pages.push({
+          pageNumber: node.attrs?.pageNumber || index + 1,
+          nodes: pageChildren,
+          wordCount: words,
+          charCount: pageText.length,
+          hasContent: words > 0 || pageChildren.length > 0,
+        });
+      }
+    });
+    if (pages.length > 0) return pages;
   }
 
   const pages: PaginatedPage[] = [];
@@ -438,15 +450,21 @@ export function paginateDocument(
       );
 
       if (linesThatFit >= 1 && linesThatFit < totalLines) {
-        // Find exact split character index based on linesThatFit
         const part1Text = lines.slice(0, linesThatFit).join(" ");
         const splitCharIndex = lineRanges[linesThatFit - 1].end;
-
         const [part1Content, part2Content] = splitInlineContent(node.content, splitCharIndex);
+
+        const canonicalId =
+          (node.attrs?.__canonicalId as string) ||
+          `split-${Math.random().toString(36).substring(2, 9)}`;
 
         currentPageNodes.push({
           type: "paragraph",
-          attrs: node.attrs,
+          attrs: {
+            ...node.attrs,
+            __canonicalId: canonicalId,
+            __splitPart: 1,
+          },
           content: part1Content.length > 0 ? part1Content : [{ type: "text", text: part1Text }],
         });
         currentPageHeight += linesThatFit * inlineMetrics.lineHeightPx + metrics.paragraphSpacing;
@@ -455,8 +473,15 @@ export function paginateDocument(
         pushCurrentPage();
         queue.unshift({
           type: "paragraph",
-          attrs: node.attrs,
-          content: part2Content.length > 0 ? part2Content : [{ type: "text", text: lines.slice(linesThatFit).join(" ") }],
+          attrs: {
+            ...node.attrs,
+            __canonicalId: canonicalId,
+            __splitPart: 2,
+          },
+          content:
+            part2Content.length > 0
+              ? part2Content
+              : [{ type: "text", text: lines.slice(linesThatFit).join(" ") }],
         });
         continue;
       }
@@ -712,3 +737,52 @@ export function computePaginationBreakPositions(
 
   return breaks;
 }
+
+/**
+ * Merges paginated page slices back into a canonical full Tiptap document.
+ * Cleanly recombines split paragraph halves.
+ */
+export function mergePagesToCanonicalDoc(pages: PaginatedPage[]): JSONContent {
+  const canonicalNodes: JSONContent[] = [];
+  let lastNode: JSONContent | null = null;
+
+  for (const page of pages) {
+    for (const node of page.nodes) {
+      const canonicalId = node.attrs?.__canonicalId as string | undefined;
+      const splitPart = node.attrs?.__splitPart as number | undefined;
+
+      if (
+        canonicalId &&
+        splitPart === 2 &&
+        lastNode &&
+        lastNode.attrs?.__canonicalId === canonicalId
+      ) {
+        // Merge part 2 back into lastNode
+        const mergedContent = [
+          ...(lastNode.content || []),
+          ...(node.content || []),
+        ];
+        lastNode.content = mergedContent;
+      } else {
+        const cleanAttrs = node.attrs ? { ...node.attrs } : undefined;
+        if (cleanAttrs) {
+          delete cleanAttrs.__canonicalId;
+          delete cleanAttrs.__splitPart;
+        }
+
+        const cleanNode: JSONContent = {
+          ...node,
+          attrs: cleanAttrs && Object.keys(cleanAttrs).length > 0 ? cleanAttrs : undefined,
+        };
+        canonicalNodes.push(cleanNode);
+        lastNode = cleanNode;
+      }
+    }
+  }
+
+  return {
+    type: "doc",
+    content: canonicalNodes.length > 0 ? canonicalNodes : [{ type: "paragraph" }],
+  };
+}
+

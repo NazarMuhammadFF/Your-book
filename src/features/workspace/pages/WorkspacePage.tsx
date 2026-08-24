@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import styles from "./WorkspacePage.module.css";
-import { Book } from "../../books/types/book";
+import { Book, BookTypography } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
 import { WorkspaceHeader } from "../components/WorkspaceHeader";
 import { DocumentView } from "../components/DocumentView";
@@ -45,6 +45,19 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     });
   };
 
+  const handleUpdateTypography = (newTypography: BookTypography) => {
+    onUpdateBook?.({
+      ...book,
+      typography: newTypography,
+      pageSettings: {
+        ...book.pageSettings,
+        margins: newTypography.margins || book.pageSettings?.margins,
+      },
+      content: documentContent,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
   return (
     <div className={styles.workspaceContainer}>
       {/* Workspace App Bar */}
@@ -72,15 +85,16 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 book={book}
                 content={documentContent}
                 onUpdateContent={handleUpdateContent}
+                onUpdateTypography={handleUpdateTypography}
               />
             </motion.div>
           ) : (
             <motion.div
               key="book-view"
               className={styles.viewPane}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={transitions.fast}
             >
               <BookViewPlaceholder
@@ -94,7 +108,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         </AnimatePresence>
       </main>
 
-      {/* Book Settings Modal */}
+      {/* Book Physical Settings Modal */}
       {isSettingsOpen && (
         <BookSettingsModal
           isOpen={isSettingsOpen}

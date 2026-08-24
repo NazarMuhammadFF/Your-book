@@ -74,12 +74,8 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         />
       </div>
 
-      {/* Right: Book Settings & Typographic Indicator */}
+      {/* Right: Book Settings */}
       <div className={styles.rightGroup}>
-        <span className={styles.typographyIndicator}>
-          {book.typography.fontFamilyId.toUpperCase()} • {book.typography.fontSize}px
-        </span>
-
         {onOpenSettings && (
           <Button
             variant="secondary"
@@ -87,7 +83,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             icon={<Sliders size={14} />}
             onClick={onOpenSettings}
             aria-label="Book Settings"
-            style={{ marginLeft: "8px" }}
           >
             Settings
           </Button>

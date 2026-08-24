@@ -11,6 +11,7 @@ export interface ImageInsertDialogProps {
     alt?: string;
     caption?: string;
     align: "left" | "center" | "right" | "full";
+    wrapMode?: "inline" | "wrap-left" | "wrap-right" | "break-text";
     width: string;
   }) => void;
 }
@@ -24,8 +25,7 @@ export const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
   const [imageSrc, setImageSrc] = useState<string>("");
   const [altText, setAltText] = useState<string>("");
   const [caption, setCaption] = useState<string>("");
-  const [align, setAlign] = useState<"left" | "center" | "right" | "full">("center");
-  const [width, setWidth] = useState<string>("100%");
+  const [align, setAlign] = useState<"left" | "center" | "right" | "full">("left");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -49,12 +49,22 @@ export const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
     e.preventDefault();
     if (!imageSrc) return;
 
+    const wrapMode =
+      align === "left"
+        ? "wrap-left"
+        : align === "right"
+        ? "wrap-right"
+        : align === "full"
+        ? "break-text"
+        : "inline";
+
     onInsertImage({
       src: imageSrc,
       alt: altText.trim() || undefined,
       caption: caption.trim() || undefined,
       align,
-      width,
+      wrapMode,
+      width: "50%",
     });
     onClose();
   };
@@ -158,41 +168,23 @@ export const ImageInsertDialog: React.FC<ImageInsertDialogProps> = ({
             </div>
           </div>
 
-          <div className={styles.gridFields}>
-            <div className={styles.fieldGroup}>
-              <label>Alignment</label>
-              <div className={styles.segmented}>
-                {(["left", "center", "right", "full"] as const).map((pos) => (
-                  <button
-                    key={pos}
-                    type="button"
-                    className={`${styles.segmentBtn} ${align === pos ? styles.activeSegment : ""}`}
-                    onClick={() => setAlign(pos)}
-                  >
-                    {pos.charAt(0).toUpperCase() + pos.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <label>Width</label>
-              <div className={styles.segmented}>
-                {[
-                  { label: "50%", val: "50%" },
-                  { label: "75%", val: "75%" },
-                  { label: "100%", val: "100%" },
-                ].map((item) => (
-                  <button
-                    key={item.val}
-                    type="button"
-                    className={`${styles.segmentBtn} ${width === item.val ? styles.activeSegment : ""}`}
-                    onClick={() => setWidth(item.val)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+          <div className={styles.fieldGroup}>
+            <label>Text Wrapping & Placement</label>
+            <div className={styles.segmented}>
+              {(["left", "center", "right"] as const).map((pos) => (
+                <button
+                  key={pos}
+                  type="button"
+                  className={`${styles.segmentBtn} ${align === pos ? styles.activeSegment : ""}`}
+                  onClick={() => setAlign(pos)}
+                >
+                  {pos === "left"
+                    ? "Wrap Left"
+                    : pos === "center"
+                    ? "Inline"
+                    : "Wrap Right"}
+                </button>
+              ))}
             </div>
           </div>
 

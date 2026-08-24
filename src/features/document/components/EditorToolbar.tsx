@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Editor } from "@tiptap/react";
 import {
   Bold,
@@ -21,12 +21,25 @@ import {
   Undo2,
   Redo2,
   RemoveFormatting,
+  SlidersHorizontal,
+  LayoutTemplate,
 } from "lucide-react";
+import {
+  Book,
+  BookTypography,
+  PageMargins,
+  FONT_SIZE_OPTIONS,
+  DEFAULT_PAGE_MARGINS,
+  getBookPageMargins,
+} from "../../books/types/book";
+import { FONT_FAMILIES } from "../../../design/typography";
 import styles from "./EditorToolbar.module.css";
 
 export interface EditorToolbarProps {
   editor: Editor | null;
-  onOpenImageDialog: () => void;
+  book: Book;
+  onUpdateTypography: (newTypography: BookTypography) => void;
+  onOpenImageDialog?: () => void;
   className?: string;
 }
 
@@ -42,10 +55,72 @@ const COLOR_PALETTE = [
 
 export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   editor,
+  book,
+  onUpdateTypography,
   onOpenImageDialog,
   className = "",
 }) => {
   const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
+  const [isSpacingMenuOpen, setIsSpacingMenuOpen] = useState(false);
+  const [isMarginsMenuOpen, setIsMarginsMenuOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const colorMenuRef = useRef<HTMLDivElement>(null);
+  const spacingMenuRef = useRef<HTMLDivElement>(null);
+  const marginsMenuRef = useRef<HTMLDivElement>(null);
+
+  const typography = book.typography;
+  const margins = getBookPageMargins(book);
+
+  // Close menus on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (colorMenuRef.current && !colorMenuRef.current.contains(e.target as Node)) {
+        setIsColorMenuOpen(false);
+      }
+      if (spacingMenuRef.current && !spacingMenuRef.current.contains(e.target as Node)) {
+        setIsSpacingMenuOpen(false);
+      }
+      if (marginsMenuRef.current && !marginsMenuRef.current.contains(e.target as Node)) {
+        setIsMarginsMenuOpen(false);
+      }
+    };
+    window.addEventListener("mousedown", handleClickOutside);
+    return () => window.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleImageUploadClick = (e: React.MouseEvent) => {
+    if (e.shiftKey && onOpenImageDialog) {
+      onOpenImageDialog();
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      if (dataUrl) {
+        editor
+          .chain()
+          .focus()
+          .setCustomImage({
+            src: dataUrl,
+            alt: file.name.replace(/\.[^/.]+$/, ""),
+            width: "50%",
+            align: "left",
+            wrapMode: "wrap-left",
+          })
+          .run();
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
 
   if (!editor) return null;
 
@@ -65,6 +140,9 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     ? "taskList"
     : "paragraph";
 
+  const activeInlineFontSize = editor.getAttributes("textStyle").fontSize?.replace("px", "");
+  const displayedFontSize = activeInlineFontSize || String(typography.fontSize || 17);
+
   const handleBlockChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     if (val === "p") editor.chain().focus().setParagraph().run();
@@ -77,15 +155,99 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     else if (val === "taskList") editor.chain().focus().toggleTaskList().run();
   };
 
+  const handleFontFamilyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const fontFamilyId = e.target.value;
+    onUpdateTypography({
+      ...typography,
+      fontFamilyId,
+    });
+  };
+
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = Number(e.target.value);
+    if (!val) return;
+
+    // Update canonical typography
+    onUpdateTypography({
+      ...typography,
+      fontSize: val,
+    });
+
+    // Also update selection if text is selected
+    if (!editor.state.selection.empty) {
+      editor.chain().focus().setFontSize(`${val}px`).run();
+    }
+  };
+
+  const handleAlignmentChange = (align: "left" | "center" | "right" | "justify") => {
+    editor.chain().focus().setTextAlign(align).run();
+    onUpdateTypography({
+      ...typography,
+      textAlignment: align,
+    });
+  };
+
+  const handleLineHeightChange = (lineHeight: number) => {
+    onUpdateTypography({
+      ...typography,
+      lineHeight,
+    });
+  };
+
+  const handleParagraphSpacingChange = (paragraphSpacing: number) => {
+    onUpdateTypography({
+      ...typography,
+      paragraphSpacing,
+    });
+  };
+
+  const handleMarginChange = (side: keyof PageMargins, value: number) => {
+    const nextMargins: PageMargins = {
+      ...margins,
+      [side]: value,
+    };
+    onUpdateTypography({
+      ...typography,
+      margins: nextMargins,
+    });
+  };
+
+  const handleMarginPreset = (preset: "compact" | "normal" | "spacious") => {
+    const nextMargins = DEFAULT_PAGE_MARGINS[preset];
+    onUpdateTypography({
+      ...typography,
+      margins: nextMargins,
+    });
+  };
+
+  const currentMarginPreset =
+    margins.top === DEFAULT_PAGE_MARGINS.compact.top &&
+    margins.bottom === DEFAULT_PAGE_MARGINS.compact.bottom &&
+    margins.left === DEFAULT_PAGE_MARGINS.compact.left &&
+    margins.right === DEFAULT_PAGE_MARGINS.compact.right
+      ? "compact"
+      : margins.top === DEFAULT_PAGE_MARGINS.normal.top &&
+        margins.bottom === DEFAULT_PAGE_MARGINS.normal.bottom &&
+        margins.left === DEFAULT_PAGE_MARGINS.normal.left &&
+        margins.right === DEFAULT_PAGE_MARGINS.normal.right
+      ? "normal"
+      : margins.top === DEFAULT_PAGE_MARGINS.spacious.top &&
+        margins.bottom === DEFAULT_PAGE_MARGINS.spacious.bottom &&
+        margins.left === DEFAULT_PAGE_MARGINS.spacious.left &&
+        margins.right === DEFAULT_PAGE_MARGINS.spacious.right
+      ? "spacious"
+      : "custom";
+
   return (
     <div className={`${styles.toolbar} ${className}`} role="toolbar" aria-label="Editor formatting toolbar">
-      {/* Block Type Select */}
+      {/* Block Structure & Typography */}
       <div className={styles.group}>
         <select
           className={styles.blockSelect}
           value={currentBlockType}
           onChange={handleBlockChange}
           aria-label="Text block structure"
+          title="Paragraph / Headings"
         >
           <option value="p">Paragraph</option>
           <option value="h1">Heading 1</option>
@@ -95,6 +257,36 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
           <option value="bulletList">Bullet List</option>
           <option value="orderedList">Numbered List</option>
           <option value="taskList">Checklist</option>
+        </select>
+
+        {/* Font Family Selector */}
+        <select
+          className={styles.fontFamilySelect}
+          value={typography.fontFamilyId || "serif"}
+          onChange={handleFontFamilyChange}
+          aria-label="Font Family"
+          title="Document Font Family"
+        >
+          {FONT_FAMILIES.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Base Font Size Selector */}
+        <select
+          className={styles.fontSizeSelect}
+          value={displayedFontSize}
+          onChange={handleFontSizeChange}
+          aria-label="Font Size"
+          title="Base Font Size"
+        >
+          {FONT_SIZE_OPTIONS.map((sz) => (
+            <option key={sz} value={String(sz)}>
+              {sz}px
+            </option>
+          ))}
         </select>
       </div>
 
@@ -163,7 +355,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
 
         {/* Text Color Dropdown */}
-        <div className={styles.relativeMenu}>
+        <div className={styles.relativeMenu} ref={colorMenuRef}>
           <button
             type="button"
             className={`${styles.toolBtn} ${isColorMenuOpen ? styles.active : ""}`}
@@ -216,8 +408,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
       <div className={styles.group}>
         <button
           type="button"
-          className={`${styles.toolBtn} ${editor.isActive({ textAlign: "left" }) ? styles.active : ""}`}
-          onClick={() => editor.chain().focus().setTextAlign("left").run()}
+          className={`${styles.toolBtn} ${
+            editor.isActive({ textAlign: "left" }) || typography.textAlignment === "left"
+              ? styles.active
+              : ""
+          }`}
+          onClick={() => handleAlignmentChange("left")}
           title="Align Left"
           aria-label="Align Left"
         >
@@ -225,8 +421,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
         <button
           type="button"
-          className={`${styles.toolBtn} ${editor.isActive({ textAlign: "center" }) ? styles.active : ""}`}
-          onClick={() => editor.chain().focus().setTextAlign("center").run()}
+          className={`${styles.toolBtn} ${
+            editor.isActive({ textAlign: "center" }) || typography.textAlignment === "center"
+              ? styles.active
+              : ""
+          }`}
+          onClick={() => handleAlignmentChange("center")}
           title="Align Center"
           aria-label="Align Center"
         >
@@ -234,8 +434,12 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
         <button
           type="button"
-          className={`${styles.toolBtn} ${editor.isActive({ textAlign: "right" }) ? styles.active : ""}`}
-          onClick={() => editor.chain().focus().setTextAlign("right").run()}
+          className={`${styles.toolBtn} ${
+            editor.isActive({ textAlign: "right" }) || typography.textAlignment === "right"
+              ? styles.active
+              : ""
+          }`}
+          onClick={() => handleAlignmentChange("right")}
           title="Align Right"
           aria-label="Align Right"
         >
@@ -243,13 +447,195 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         </button>
         <button
           type="button"
-          className={`${styles.toolBtn} ${editor.isActive({ textAlign: "justify" }) ? styles.active : ""}`}
-          onClick={() => editor.chain().focus().setTextAlign("justify").run()}
+          className={`${styles.toolBtn} ${
+            editor.isActive({ textAlign: "justify" }) || typography.textAlignment === "justify"
+              ? styles.active
+              : ""
+          }`}
+          onClick={() => handleAlignmentChange("justify")}
           title="Justify"
           aria-label="Justify"
         >
           <AlignJustify size={15} />
         </button>
+      </div>
+
+      <div className={styles.separator} />
+
+      {/* Line & Paragraph Spacing Menu */}
+      <div className={styles.relativeMenu} ref={spacingMenuRef}>
+        <button
+          type="button"
+          className={`${styles.toolBtn} ${isSpacingMenuOpen ? styles.active : ""}`}
+          onClick={() => setIsSpacingMenuOpen(!isSpacingMenuOpen)}
+          title="Line & Paragraph Spacing"
+          aria-label="Line & Paragraph Spacing"
+        >
+          <SlidersHorizontal size={15} />
+        </button>
+
+        {isSpacingMenuOpen && (
+          <div className={`${styles.popover} ${styles.spacingPopover}`}>
+            <div className={styles.popoverHeader}>
+              <span className={styles.popoverTitle}>Spacing Settings</span>
+            </div>
+
+            <div className={styles.sliderRow}>
+              <div className={styles.sliderLabelGroup}>
+                <span>Line Height</span>
+                <span className={styles.sliderValBadge}>
+                  {(typography.lineHeight || 1.68).toFixed(2)}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1.2"
+                max="2.4"
+                step="0.05"
+                value={typography.lineHeight || 1.68}
+                onChange={(e) => handleLineHeightChange(Number(e.target.value))}
+                className={styles.rangeInput}
+              />
+            </div>
+
+            <div className={styles.sliderRow}>
+              <div className={styles.sliderLabelGroup}>
+                <span>Paragraph Spacing</span>
+                <span className={styles.sliderValBadge}>
+                  {typography.paragraphSpacing || 18}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min="6"
+                max="36"
+                step="2"
+                value={typography.paragraphSpacing || 18}
+                onChange={(e) => handleParagraphSpacingChange(Number(e.target.value))}
+                className={styles.rangeInput}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Page Margins Menu */}
+      <div className={styles.relativeMenu} ref={marginsMenuRef}>
+        <button
+          type="button"
+          className={`${styles.toolBtn} ${isMarginsMenuOpen ? styles.active : ""}`}
+          onClick={() => setIsMarginsMenuOpen(!isMarginsMenuOpen)}
+          title="Page Margins"
+          aria-label="Page Margins"
+        >
+          <LayoutTemplate size={15} />
+        </button>
+
+        {isMarginsMenuOpen && (
+          <div className={`${styles.popover} ${styles.marginsPopover}`}>
+            <div className={styles.popoverHeader}>
+              <span className={styles.popoverTitle}>Page Margins</span>
+              <div className={styles.presetGroup}>
+                <button
+                  type="button"
+                  className={`${styles.presetMiniBtn} ${
+                    currentMarginPreset === "compact" ? styles.presetMiniBtnActive : ""
+                  }`}
+                  onClick={() => handleMarginPreset("compact")}
+                  title="Compact margins"
+                >
+                  Compact
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.presetMiniBtn} ${
+                    currentMarginPreset === "normal" ? styles.presetMiniBtnActive : ""
+                  }`}
+                  onClick={() => handleMarginPreset("normal")}
+                  title="Normal margins"
+                >
+                  Normal
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.presetMiniBtn} ${
+                    currentMarginPreset === "spacious" ? styles.presetMiniBtnActive : ""
+                  }`}
+                  onClick={() => handleMarginPreset("spacious")}
+                  title="Spacious margins"
+                >
+                  Spacious
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.marginsGrid}>
+              <div className={styles.sliderRow}>
+                <div className={styles.sliderLabelGroup}>
+                  <span>Top</span>
+                  <span className={styles.sliderValBadge}>{margins.top}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  step="2"
+                  value={margins.top}
+                  onChange={(e) => handleMarginChange("top", Number(e.target.value))}
+                  className={styles.rangeInput}
+                />
+              </div>
+
+              <div className={styles.sliderRow}>
+                <div className={styles.sliderLabelGroup}>
+                  <span>Bottom</span>
+                  <span className={styles.sliderValBadge}>{margins.bottom}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  step="2"
+                  value={margins.bottom}
+                  onChange={(e) => handleMarginChange("bottom", Number(e.target.value))}
+                  className={styles.rangeInput}
+                />
+              </div>
+
+              <div className={styles.sliderRow}>
+                <div className={styles.sliderLabelGroup}>
+                  <span>Left</span>
+                  <span className={styles.sliderValBadge}>{margins.left}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="120"
+                  step="2"
+                  value={margins.left}
+                  onChange={(e) => handleMarginChange("left", Number(e.target.value))}
+                  className={styles.rangeInput}
+                />
+              </div>
+
+              <div className={styles.sliderRow}>
+                <div className={styles.sliderLabelGroup}>
+                  <span>Right</span>
+                  <span className={styles.sliderValBadge}>{margins.right}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="120"
+                  step="2"
+                  value={margins.right}
+                  onChange={(e) => handleMarginChange("right", Number(e.target.value))}
+                  className={styles.rangeInput}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className={styles.separator} />
@@ -298,12 +684,19 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
 
       {/* Media & Elements */}
       <div className={styles.group}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleImageFileChange}
+        />
         <button
           type="button"
           className={styles.toolBtn}
-          onClick={onOpenImageDialog}
-          title="Insert Image"
-          aria-label="Insert Image"
+          onClick={handleImageUploadClick}
+          title="Upload & Insert Image"
+          aria-label="Upload & Insert Image"
         >
           <ImageIcon size={15} />
         </button>
@@ -346,3 +739,4 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
     </div>
   );
 };
+

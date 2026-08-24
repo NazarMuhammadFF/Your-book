@@ -18,6 +18,7 @@ declare module "page-flip/dist/js/page-flip.patched.js" {
     drawShadow?: boolean;
     maxShadowOpacity?: number;
     flippingTime?: number;
+    startZIndex?: number;
     showPageCorners?: boolean;
     disableFlipByClick?: boolean;
     useMouseEvents?: boolean;

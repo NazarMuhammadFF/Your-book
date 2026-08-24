@@ -9,20 +9,85 @@
   overflow-wrap: anywhere;
 }
 
-.booknote-page-break {
-  display: inline-block;
+/* Multi-Page Canvas Container (Continuous layout in Document View) */
+.booknote-prose.ProseMirror {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 32px;
+  padding: 32px 24px 80px 24px;
   width: 100%;
-  margin: 0;
-  padding: 0;
-  font-size: 0;
-  line-height: 0;
-  vertical-align: top;
+  box-sizing: border-box;
+}
+
+/* Individual Physical Page Node */
+.booknote-page-node {
+  position: relative;
+  width: var(--page-width, 794px);
+  min-height: var(--page-height, 1123px);
+  max-height: var(--page-height, 1123px);
+  padding: var(--page-pad-top, 40px) var(--page-pad-right, var(--page-pad-x, 36px)) var(--page-pad-bottom, 32px) var(--page-pad-left, var(--page-pad-x, 36px));
+  background: var(--paper-bg, #ffffff);
+  color: var(--paper-text, #2a2723);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  border-radius: 2px;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: var(--doc-font-family, serif);
+  font-size: var(--doc-font-size, 17px);
+  line-height: var(--doc-line-height, 1.68);
+  text-align: var(--doc-text-align, left);
+  transition: box-shadow 0.15s ease;
+  user-select: text;
+  cursor: text;
+}
+
+.booknote-page-node:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.booknote-page-node:focus-within {
+  box-shadow: 0 0 0 1px var(--accent-primary), 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Header & Running Title */
+.booknote-page-node::before {
+  content: attr(data-running-title);
+  position: absolute;
+  top: 14px;
+  left: var(--page-pad-left, var(--page-pad-x, 36px));
+  right: var(--page-pad-right, var(--page-pad-x, 36px));
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #8e877d);
   pointer-events: none;
   user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.7;
+}
+
+/* Footer & Page Number */
+.booknote-page-node::after {
+  content: "Page " attr(data-page-number);
+  position: absolute;
+  bottom: 12px;
+  right: var(--page-pad-right, var(--page-pad-x, 36px));
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted, #8e877d);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.7;
 }
 
 .booknote-prose p {
-  margin: 0 0 var(--doc-p-spacing, 16px) 0;
+  margin: 0 0 var(--doc-p-spacing, 18px) 0;
   line-height: inherit;
   color: inherit;
 }
@@ -33,33 +98,33 @@
   font-weight: 700;
   line-height: 1.22;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
+  color: var(--paper-text, #2a2723);
 }
 
 .booknote-prose h2 {
-  margin: 22px 0 12px 0;
+  margin: 20px 0 12px 0;
   font-size: 1.28em;
   font-weight: 600;
   line-height: 1.28;
   letter-spacing: -0.01em;
-  color: var(--text-primary);
+  color: var(--paper-text, #2a2723);
 }
 
 .booknote-prose h3 {
-  margin: 18px 0 8px 0;
+  margin: 16px 0 8px 0;
   font-size: 1.12em;
   font-weight: 600;
   line-height: 1.35;
-  color: var(--text-primary);
+  color: var(--paper-text, #2a2723);
 }
 
 .booknote-prose blockquote {
   margin: 14px 0 18px 0;
   padding: 8px 18px;
   border-left: 3px solid var(--accent-primary);
-  background-color: var(--bg-canvas-subtle);
+  background-color: rgba(0, 0, 0, 0.03);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  color: var(--text-primary);
+  color: inherit;
   font-style: italic;
 }
 
@@ -122,11 +187,11 @@
 .booknote-prose code {
   font-family: var(--font-mono);
   font-size: 0.88em;
-  background-color: var(--bg-canvas-subtle);
+  background-color: rgba(0, 0, 0, 0.04);
   border: 1px solid var(--border-subtle);
   padding: 2px 5px;
   border-radius: 3px;
-  color: var(--text-primary);
+  color: inherit;
 }
 
 .booknote-prose mark {
@@ -145,13 +210,40 @@
 
 /* Figures & Images */
 .booknote-prose figure.book-figure {
-  margin: 16px auto;
-  display: block;
+  box-sizing: border-box;
   max-width: 100%;
+}
+
+.booknote-prose figure.book-figure-wrap-left {
+  float: left !important;
+  margin: 6px 20px 14px 0 !important;
+  clear: none;
+}
+
+.booknote-prose figure.book-figure-wrap-right {
+  float: right !important;
+  margin: 6px 0 14px 20px !important;
+  clear: none;
+}
+
+.booknote-prose figure.book-figure-inline {
+  display: block !important;
+  float: none !important;
+  clear: both !important;
+  margin: 14px auto !important;
+}
+
+.booknote-prose figure.book-figure-break-text {
+  display: block !important;
+  width: 100% !important;
+  float: none !important;
+  clear: both !important;
+  margin: 16px 0 !important;
 }
 
 .booknote-prose figure.book-figure img.book-image-element {
   max-width: 100%;
+  width: 100%;
   height: auto;
   border-radius: 4px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);

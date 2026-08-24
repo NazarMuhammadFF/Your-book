@@ -1,5 +1,5 @@
 import React from "react";
-import { Book } from "../../books/types/book";
+import { Book, getBookPageMetrics } from "../../books/types/book";
 import { JSONContent } from "@tiptap/react";
 import { PageCanvas } from "../../document/components/PageCanvas";
 import styles from "./ReaderPage.module.css";
@@ -12,6 +12,7 @@ export interface ReaderPageProps {
   nodes?: JSONContent[];
   runningTitle?: string;
   isEndCover?: boolean;
+  scale?: number;
 }
 
 export function renderInlineMarks(text: string, marks?: Array<{ type: string; attrs?: Record<string, any> }>): React.ReactNode {
@@ -115,28 +116,67 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
   }
 
   if (node.type === "image") {
-    const { src, alt, caption, width, align } = node.attrs || {};
+    const { src, alt, caption, width, align, wrapMode } = node.attrs || {};
+
+    const effectiveWrap =
+      wrapMode ||
+      (align === "right" ? "wrap-right" : align === "center" ? "inline" : "wrap-left");
+
+    let floatStyle: "left" | "right" | "none" = "none";
     let margin = "12px auto";
-    if (align === "left") margin = "12px auto 12px 0";
-    else if (align === "right") margin = "12px 0 12px auto";
+    let clearStyle: "none" | "both" = "both";
+    let displayStyle = "block";
+
+    if (effectiveWrap === "wrap-left") {
+      floatStyle = "left";
+      margin = "4px 18px 12px 0";
+      clearStyle = "none";
+      displayStyle = "inline-block";
+    } else if (effectiveWrap === "wrap-right") {
+      floatStyle = "right";
+      margin = "4px 0 12px 18px";
+      clearStyle = "none";
+      displayStyle = "inline-block";
+    } else if (effectiveWrap === "break-text") {
+      floatStyle = "none";
+      margin = "16px 0";
+      clearStyle = "both";
+      displayStyle = "block";
+    } else {
+      floatStyle = "none";
+      clearStyle = "both";
+      displayStyle = "block";
+      if (align === "left") margin = "12px auto 12px 0";
+      else if (align === "right") margin = "12px 0 12px auto";
+      else margin = "12px auto";
+    }
+
+    let widthStyle = "50%";
+    if (typeof width === "number") widthStyle = `${width}px`;
+    else if (typeof width === "string") {
+      if (width === "full") widthStyle = "100%";
+      else widthStyle = width;
+    }
 
     return (
       <figure
         key={index}
-        className="book-figure"
+        className={`book-figure book-figure-${effectiveWrap}`}
         style={{
-          display: "flex",
-          flexDirection: "column",
-          maxWidth: width || "100%",
-          maxHeight: "calc(100% - 24px)",
+          display: displayStyle,
+          float: floatStyle,
+          clear: clearStyle,
+          width: widthStyle,
+          maxWidth: "100%",
           margin,
+          boxSizing: "border-box",
         }}
       >
         <img
           src={src}
           alt={alt || ""}
           className="book-image-element"
-          style={{ maxHeight: caption ? "calc(100% - 30px)" : "100%", objectFit: "contain" }}
+          style={{ width: "100%", height: "auto", display: "block", borderRadius: "4px" }}
         />
         {caption && <figcaption className="book-image-caption">{caption}</figcaption>}
       </figure>
@@ -151,21 +191,42 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 }
 
 export const ReaderPage = React.forwardRef<HTMLDivElement, ReaderPageProps>(
-  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover }, ref) => {
-    const side = pageNumber % 2 === 0 ? "left" : "right";
+  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover, scale = 1 }, ref) => {
+    const side = pageNumber % 2 === 1 ? "left" : "right";
+    const pageMetrics = getBookPageMetrics(book);
 
     return (
-      <PageCanvas
+      <div
         ref={ref}
-        book={book}
-        pageNumber={pageNumber}
-        totalPages={totalPages}
-        nodes={nodes}
-        runningTitle={runningTitle}
-        isEndCover={isEndCover}
-        side={side}
-        showGutterShadow={true}
-      />
+        className={`${styles.page} page`}
+        data-density="soft"
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <PageCanvas
+          book={book}
+          pageNumber={pageNumber}
+          totalPages={totalPages}
+          nodes={nodes}
+          runningTitle={runningTitle}
+          isEndCover={isEndCover}
+          side={side}
+          showGutterShadow={true}
+          style={{
+            width: `${pageMetrics.pageWidth}px`,
+            height: `${pageMetrics.pageHeight}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            position: "absolute",
+            top: 0,
+            left: 0,
+          }}
+        />
+      </div>
     );
   }
 );

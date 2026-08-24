@@ -17,6 +17,8 @@
   user-select: text;
   cursor: text;
   isolation: isolate;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

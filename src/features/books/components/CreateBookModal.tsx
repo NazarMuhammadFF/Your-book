@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Sparkles, Type, BookOpen, Sliders, Image as ImageIcon } from "lucide-react";
+import { Sparkles, BookOpen, Sliders, Image as ImageIcon } from "lucide-react";
 import styles from "./CreateBookModal.module.css";
 import {
   Book,
+  BookTypography,
   PageSizePreset,
   PAGE_SIZE_PRESETS,
   getDimensionsFromPreset,
@@ -17,7 +18,6 @@ import { Slider } from "../../../components/ui/Slider";
 import {
   COVER_PALETTES,
   COVER_PATTERNS,
-  FONT_FAMILIES,
   CoverPattern,
 } from "../../../design/typography";
 import { createEmptyDocumentContent } from "../../document/utils/initialContent";
@@ -45,8 +45,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   const [pattern, setPattern] = useState<CoverPattern>("classic-frame");
   const [badgeText, setBadgeText] = useState("VOL. I");
 
-  // Active settings tab
-  const [activeTab, setActiveTab] = useState<"cover" | "pages" | "typography">("cover");
+  // Active settings tab (Cover & Physical Book/Pages only)
+  const [activeTab, setActiveTab] = useState<"cover" | "pages">("cover");
 
   // Physical Book & Page settings
   const [pageSizePreset, setPageSizePreset] = useState<PageSizePreset>("a5");
@@ -56,11 +56,18 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   const [pageMargin, setPageMargin] = useState<"compact" | "normal" | "spacious">("normal");
   const [showPageNumbers, setShowPageNumbers] = useState(true);
 
-  // Typography settings
-  const [fontFamilyId, setFontFamilyId] = useState("serif");
-  const [fontSize, setFontSize] = useState(17);
-  const [lineHeight, setLineHeight] = useState(1.68);
-  const [paragraphSpacing, setParagraphSpacing] = useState(18);
+  // Preserved typography settings
+  const typography: BookTypography = useMemo(() => {
+    return (
+      initialBook?.typography || {
+        fontFamilyId: "serif",
+        fontSize: 17,
+        lineHeight: 1.68,
+        paragraphSpacing: 18,
+        textAlignment: "left",
+      }
+    );
+  }, [initialBook]);
 
   // 3D Preview Interactive Rotation
   const [previewRotY, setPreviewRotY] = useState<number>(-22);
@@ -91,10 +98,6 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
       setPageMargin(initialBook.pageSettings.pageMargin || "normal");
       setShowPageNumbers(initialBook.pageSettings.showPageNumbers ?? true);
 
-      setFontFamilyId(initialBook.typography.fontFamilyId || "serif");
-      setFontSize(initialBook.typography.fontSize || 17);
-      setLineHeight(initialBook.typography.lineHeight || 1.68);
-      setParagraphSpacing(initialBook.typography.paragraphSpacing || 18);
     } else {
       setTitle("My New Book");
       setSubtitle("");
@@ -108,10 +111,6 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
       setCoverThickness(3);
       setPageMargin("normal");
       setShowPageNumbers(true);
-      setFontFamilyId("serif");
-      setFontSize(17);
-      setLineHeight(1.68);
-      setParagraphSpacing(18);
     }
     setPreviewRotY(-22);
     setPreviewRotX(4);
@@ -137,13 +136,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
         authorName: authorName.trim() || undefined,
         badgeText: badgeText.trim() || undefined,
       },
-      typography: {
-        fontFamilyId,
-        fontSize,
-        lineHeight,
-        paragraphSpacing,
-        textAlignment: "left",
-      },
+      typography,
       pageSettings: {
         pageMargin,
         pageSizePreset,
@@ -163,10 +156,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
       paletteId,
       pattern,
       badgeText,
-      fontFamilyId,
-      fontSize,
-      lineHeight,
-      paragraphSpacing,
+      typography,
       pageMargin,
       pageSizePreset,
       pagesOffset,
@@ -375,14 +365,6 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                 <Sliders size={14} />
                 <span>Book & Pages</span>
               </button>
-              <button
-                type="button"
-                className={`${styles.tabBtn} ${activeTab === "typography" ? styles.activeTab : ""}`}
-                onClick={() => setActiveTab("typography")}
-              >
-                <Type size={14} />
-                <span>Typography</span>
-              </button>
             </div>
 
             {/* Tab Contents */}
@@ -519,48 +501,6 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                       className={styles.checkbox}
                     />
                   </div>
-                </div>
-              )}
-
-              {activeTab === "typography" && (
-                <div className={styles.tabContent}>
-                  <Select
-                    label="Default Font Family"
-                    value={fontFamilyId}
-                    onChange={(e) => setFontFamilyId(e.target.value)}
-                    options={FONT_FAMILIES.map((f) => ({ value: f.id, label: f.name }))}
-                    helperText="Applies to continuous reading and writing views."
-                  />
-
-                  <Slider
-                    label="Base Font Size"
-                    valueDisplay={`${fontSize}px`}
-                    min={14}
-                    max={20}
-                    step={0.5}
-                    value={fontSize}
-                    onChange={(e) => setFontSize(Number(e.target.value))}
-                  />
-
-                  <Slider
-                    label="Line Height"
-                    valueDisplay={lineHeight.toFixed(2)}
-                    min={1.4}
-                    max={2.0}
-                    step={0.05}
-                    value={lineHeight}
-                    onChange={(e) => setLineHeight(Number(e.target.value))}
-                  />
-
-                  <Slider
-                    label="Paragraph Spacing"
-                    valueDisplay={`${paragraphSpacing}px`}
-                    min={12}
-                    max={28}
-                    step={2}
-                    value={paragraphSpacing}
-                    onChange={(e) => setParagraphSpacing(Number(e.target.value))}
-                  />
                 </div>
               )}
             </div>

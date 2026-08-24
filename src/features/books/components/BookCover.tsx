@@ -9,6 +9,7 @@ export interface BookCoverProps {
   subtitle?: string;
   className?: string;
   compact?: boolean;
+  isBack?: boolean;
 }
 
 export const BookCover: React.FC<BookCoverProps> = ({
@@ -17,12 +18,15 @@ export const BookCover: React.FC<BookCoverProps> = ({
   subtitle,
   className = "",
   compact = false,
+  isBack = false,
 }) => {
   const palette = COVER_PALETTES.find((p) => p.id === cover.paletteId) || COVER_PALETTES[0];
 
   return (
     <div
-      className={`${styles.cover} ${styles[cover.pattern]} ${compact ? styles.compact : ""} ${className}`}
+      className={`${styles.cover} ${styles[cover.pattern]} ${compact ? styles.compact : ""} ${
+        isBack ? styles.backCover : ""
+      } ${className}`}
       style={
         {
           "--cover-primary": palette.primary,
@@ -36,7 +40,7 @@ export const BookCover: React.FC<BookCoverProps> = ({
       {/* Subtle paper/cloth texture sheen overlay */}
       <div className={styles.textureSheen} />
 
-      {/* Left spine hinge fold shadow line */}
+      {/* Spine hinge fold shadow line */}
       <div className={styles.spineHinge} />
 
       {/* Pattern decoration layers */}
@@ -64,32 +68,42 @@ export const BookCover: React.FC<BookCoverProps> = ({
         </div>
       )}
 
-      {cover.pattern === "center-badge" && (
+      {cover.pattern === "center-badge" && !isBack && (
         <div className={styles.badgeDecoration}>
           <div className={styles.emblem}>{cover.badgeText || "★"}</div>
         </div>
       )}
 
-      {/* Title and metadata layout */}
-      <div className={styles.content}>
-        {cover.badgeText && cover.pattern !== "center-badge" && (
-          <div className={styles.badge}>{cover.badgeText}</div>
-        )}
-
-        {cover.titleVisible && (
-          <div className={styles.titleSection}>
-            <h3 className={styles.title}>{title || "Untitled Book"}</h3>
-            {subtitle && !compact && <p className={styles.subtitle}>{subtitle}</p>}
-          </div>
-        )}
-
-        {cover.authorVisible && (
-          <div className={styles.authorSection}>
+      {/* Content layout */}
+      {isBack ? (
+        <div className={styles.backContent}>
+          <div className={styles.backEmblem}>{cover.badgeText || "★"}</div>
+          <div className={styles.backColophon}>
             <div className={styles.authorRule} />
-            <span className={styles.author}>{cover.authorName || "BookNote"}</span>
+            <span className={styles.author}>BookNote</span>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className={styles.content}>
+          {cover.badgeText && cover.pattern !== "center-badge" && (
+            <div className={styles.badge}>{cover.badgeText}</div>
+          )}
+
+          {cover.titleVisible && (
+            <div className={styles.titleSection}>
+              <h3 className={styles.title}>{title || "Untitled Book"}</h3>
+              {subtitle && !compact && <p className={styles.subtitle}>{subtitle}</p>}
+            </div>
+          )}
+
+          {cover.authorVisible && (
+            <div className={styles.authorSection}>
+              <div className={styles.authorRule} />
+              <span className={styles.author}>{cover.authorName || "BookNote"}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
