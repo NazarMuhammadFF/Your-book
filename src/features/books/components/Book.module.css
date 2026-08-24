@@ -85,15 +85,15 @@
   box-shadow: 0 0 0 2px var(--accent-primary);
 }
 
-/* 2a. Extracting from Shelf (Graceful multi-step extraction) */
+/* 2a. Extracting from Shelf (Graceful sequential extraction: slide out first, then flip) */
 .extracting {
   left: calc(var(--book-thickness, 44px) / 2);
-  animation: animExtractFromShelf var(--extract-duration, 0.8s) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: animExtractFromShelf var(--extract-duration, 0.85s) cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
   pointer-events: none;
   z-index: 100 !important;
 }
 
-/* 2b. Extracted (Direct interactive 3D inspection) */
+/* 2b. Extracted (Direct interactive 3D inspection in foreground) */
 .extracted {
   left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
   transform-origin: 50% 50% 0px;
@@ -111,10 +111,10 @@
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* 3. Returning to Shelf */
+/* 3. Returning to Shelf (Sequential return: flip sideways in foreground, then slide back into slot) */
 .returning {
   left: calc(var(--book-thickness, 44px) / 2);
-  animation: animReturnFromInspection var(--return-duration, 0.95s) cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: animReturnFromInspection var(--return-duration, 0.9s) cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   z-index: 100 !important;
 }
 
@@ -130,38 +130,44 @@
    KEYFRAME ANIMATIONS
    ========================================================================== */
 
-/* Extract sequence: slide fully forward out of slot -> rotate in open space -> face camera */
+/* Extract sequence: slide straight forward out of slot -> only when fully in front, rotate to face camera */
 @keyframes animExtractFromShelf {
   0% {
     transform: rotateY(90deg) translateX(0px) translateZ(0px);
   }
-  42% {
-    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 15px)) translateZ(45px);
+  48% {
+    /* Pure linear slide forward: 100% sideways at 90deg, pulled fully into foreground clear of all books */
+    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 45px)) translateZ(120px);
   }
-  72% {
-    transform: translateX(calc(-0.35 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.7))
-      rotateY(35deg) translateZ(75px);
+  76% {
+    /* Now completely in open air in front, smoothly turning */
+    transform: translateX(calc(-0.25 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.75))
+      rotateY(25deg) translateZ(135px);
   }
   100% {
+    /* Settled facing camera in the forward foreground */
     transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
-      rotateY(0deg) translateZ(var(--book-extract-z, 90px));
+      rotateY(0deg) translateZ(var(--book-extract-z, 140px));
   }
 }
 
-/* Return sequence: rotate sideways in open space -> align in front of slot -> slide back into slot */
+/* Return sequence: turn sideways while in foreground -> align in front of slot -> slide straight back into slot */
 @keyframes animReturnFromInspection {
   0% {
     transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
-      rotateY(0deg) translateZ(var(--book-extract-z, 90px));
+      rotateY(0deg) translateZ(var(--book-extract-z, 140px));
   }
-  32% {
-    transform: translateX(calc(-0.35 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.7))
-      rotateY(38deg) translateZ(75px);
+  28% {
+    /* Rotate sideways while remaining fully in foreground open air */
+    transform: translateX(calc(-0.25 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.75))
+      rotateY(25deg) translateZ(135px);
   }
-  62% {
-    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 15px)) translateZ(45px);
+  52% {
+    /* Fully sideways at 90deg, positioned straight in front of slot opening */
+    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 45px)) translateZ(120px);
   }
   100% {
+    /* Pure linear slide straight back into slot */
     transform: rotateY(90deg) translateX(0px) translateZ(0px);
   }
 }

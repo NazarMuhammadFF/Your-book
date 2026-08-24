@@ -4,9 +4,9 @@
  */
 
 export const READER_FLIP_DURATION_MS = 560;
-export const BOOKSHELF_EXTRACT_DURATION_MS = 800;
+export const BOOKSHELF_EXTRACT_DURATION_MS = 850;
 export const BOOKSHELF_FLIP_DURATION_MS = 420;
-export const BOOKSHELF_RETURN_DURATION_MS = 950;
+export const BOOKSHELF_RETURN_DURATION_MS = 900;
 export const BOOKSHELF_SETTLE_DURATION_MS = 380;
 
 export const transitions = {

@@ -333,7 +333,7 @@ export const Book: React.FC<BookProps> = ({
       transformStyle = undefined;
     } else {
       stateClass = `${styles.extracted} ${isDragging ? styles.extractedDragging : styles.extractedSettled}`;
-      transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 90px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+      transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 140px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
     }
   } else if (isLifted) {
     stateClass = styles.lifted;
@@ -415,6 +415,7 @@ export const Book: React.FC<BookProps> = ({
           "--book-spine-text": palette.textColor,
           "--book-primary": palette.primary,
           "--book-accent": palette.accent,
+          "--book-extract-z": "140px",
           "--edge-compensation-x": `${edgeCompensationX}px`,
           "--extract-duration": `${BOOKSHELF_EXTRACT_DURATION_MS}ms`,
           "--return-duration": `${BOOKSHELF_RETURN_DURATION_MS}ms`,
