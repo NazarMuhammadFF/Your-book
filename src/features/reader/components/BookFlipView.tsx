@@ -79,8 +79,14 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
     const updateScale = () => {
       if (!containerRef.current) return;
       const availableWidth = containerRef.current.clientWidth - 32;
+      const availableHeight = containerRef.current.clientHeight - 80;
       if (availableWidth > 0 && targetSpreadWidth > 0) {
-        const nextScale = Math.min(1, Math.max(0.35, availableWidth / targetSpreadWidth));
+        const scaleX = availableWidth / targetSpreadWidth;
+        const scaleY =
+          availableHeight > 0 && targetSpreadHeight > 0
+            ? availableHeight / targetSpreadHeight
+            : 1;
+        const nextScale = Math.min(1, Math.max(0.35, Math.min(scaleX, scaleY)));
         setScale(nextScale);
       }
     };
@@ -88,7 +94,7 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
     const observer = new ResizeObserver(updateScale);
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [targetSpreadWidth]);
+  }, [targetSpreadWidth, targetSpreadHeight]);
 
   const handleFlip = (e: { data: number }) => {
     setCurrentPage(e.data);
