@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./BackCover.module.css";
 import { Book } from "../types/book";
-import { COVER_PALETTES } from "../../../design/typography";
+import { resolveCoverPalette } from "../../../design/typography";
 
 export interface BackCoverProps {
   book: Book;
@@ -14,8 +14,7 @@ export const BackCover: React.FC<BackCoverProps> = ({
   compact = false,
   className = "",
 }) => {
-  const palette =
-    COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
+  const palette = resolveCoverPalette(book.cover.paletteId);
 
   const fontLabel =
     book.typography.fontFamilyId === "serif"

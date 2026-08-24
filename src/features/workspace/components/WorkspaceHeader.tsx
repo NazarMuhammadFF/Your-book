@@ -5,7 +5,7 @@ import { Book } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
 import { SegmentedControl } from "../../../components/ui/SegmentedControl";
 import { Button } from "../../../components/ui/Button";
-import { COVER_PALETTES } from "../../../design/typography";
+import { resolveCoverPalette } from "../../../design/typography";
 
 export interface WorkspaceHeaderProps {
   book: Book;
@@ -22,7 +22,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   onBackToLibrary,
   onOpenSettings,
 }) => {
-  const palette = COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
+  const palette = resolveCoverPalette(book.cover.paletteId);
 
   return (
     <header className={styles.header}>

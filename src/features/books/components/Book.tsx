@@ -3,7 +3,7 @@ import styles from "./Book.module.css";
 import { Book as IBook, getBookDimensions } from "../types/book";
 import { BookCover } from "./BookCover";
 import { BackCover } from "./BackCover";
-import { COVER_PALETTES } from "../../../design/typography";
+import { resolveCoverPalette } from "../../../design/typography";
 import {
   BOOKSHELF_EXTRACT_DURATION_MS,
   BOOKSHELF_RETURN_DURATION_MS,
@@ -65,8 +65,7 @@ export const Book: React.FC<BookProps> = ({
     coverThickness = 3,
   } = getBookDimensions(book);
 
-  const palette =
-    COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
+  const palette = resolveCoverPalette(book.cover.paletteId);
 
   // Dynamic interactive continuous rotation (Y-axis: 0° = front, ±180° = back; X-axis: vertical pitch tilt)
   const [rotationY, setRotationY] = useState<number>(activeSide === "back" ? 180 : 0);

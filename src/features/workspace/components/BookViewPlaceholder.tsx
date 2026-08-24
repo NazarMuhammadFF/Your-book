@@ -2,7 +2,7 @@ import React from "react";
 import styles from "./BookViewPlaceholder.module.css";
 import { Book } from "../../books/types/book";
 import { JSONContent } from "@tiptap/react";
-import { COVER_PALETTES } from "../../../design/typography";
+import { resolveCoverPalette } from "../../../design/typography";
 import { BookFlipView } from "../../reader/components/BookFlipView";
 
 export interface BookViewPlaceholderProps {
@@ -18,8 +18,7 @@ export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
   pageIndex,
   onPageIndexChange,
 }) => {
-  const palette =
-    COVER_PALETTES.find((p) => p.id === book.cover.paletteId) || COVER_PALETTES[0];
+  const palette = resolveCoverPalette(book.cover.paletteId);
 
   return (
     <div

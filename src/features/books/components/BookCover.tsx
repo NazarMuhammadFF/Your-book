@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./BookCover.module.css";
 import { BookCover as IBookCover } from "../types/book";
-import { COVER_PALETTES } from "../../../design/typography";
+import { resolveCoverPalette } from "../../../design/typography";
 
 export interface BookCoverProps {
   cover: IBookCover;
@@ -20,7 +20,7 @@ export const BookCover: React.FC<BookCoverProps> = ({
   compact = false,
   isBack = false,
 }) => {
-  const palette = COVER_PALETTES.find((p) => p.id === cover.paletteId) || COVER_PALETTES[0];
+  const palette = resolveCoverPalette(cover.paletteId);
   const isCustomCover = cover.coverType === "custom" && Boolean(cover.customImageUrl);
 
   return (

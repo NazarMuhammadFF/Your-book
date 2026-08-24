@@ -8,6 +8,8 @@ import {
   Trash2,
   RefreshCw,
   Palette,
+  Pipette,
+  Wand2,
 } from "lucide-react";
 import styles from "./CreateBookModal.module.css";
 import {
@@ -28,8 +30,9 @@ import {
   COVER_PALETTES,
   COVER_PATTERNS,
   CoverPattern,
+  resolveCoverPalette,
 } from "../../../design/typography";
-import { optimizeCoverImage } from "../utils/imageOptimization";
+import { optimizeCoverImage, extractPaletteFromImage } from "../utils/imageOptimization";
 import { createEmptyDocumentContent } from "../../document/utils/initialContent";
 
 export interface BookSettingsModalProps {
@@ -63,8 +66,10 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   const [titleVisible, setTitleVisible] = useState<boolean>(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [extractedColors, setExtractedColors] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const colorPickerRef = useRef<HTMLInputElement>(null);
 
   // Active settings tab (Cover & Physical Book/Pages only)
   const [activeTab, setActiveTab] = useState<"cover" | "pages">("cover");
@@ -111,7 +116,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
       setPattern(initialBook.cover.pattern || "classic-frame");
       setBadgeText(initialBook.cover.badgeText || "");
 
-      setCoverType(initialBook.cover.coverType || (initialBook.cover.customImageUrl ? "custom" : "preset"));
+      const isCustom = initialBook.cover.coverType === "custom" || Boolean(initialBook.cover.customImageUrl);
+      setCoverType(isCustom ? "custom" : "preset");
       setCustomImageUrl(initialBook.cover.customImageUrl || "");
       setImageFit(initialBook.cover.imageFit || "cover");
       setOverlayOpacity(initialBook.cover.overlayOpacity ?? 0.25);
@@ -147,6 +153,21 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
     setPreviewRotX(4);
     setUploadError(null);
   }, [initialBook, isOpen]);
+
+  // Extract color palette dynamically whenever customImageUrl is set or updated
+  useEffect(() => {
+    if (customImageUrl) {
+      extractPaletteFromImage(customImageUrl, 8).then((colors) => {
+        setExtractedColors(colors);
+        // Automatically adopt dominant color if current palette is default
+        if (colors.length > 0 && (!paletteId || paletteId === "navy")) {
+          setPaletteId(colors[0]);
+        }
+      });
+    } else {
+      setExtractedColors([]);
+    }
+  }, [customImageUrl]);
 
   // Derive dimensions from selected preset, thickness, pages offset, and cover thickness
   const derivedDimensions = useMemo(
@@ -346,6 +367,9 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
     onClose();
   };
 
+  const isCustomColor = paletteId.startsWith("#");
+  const currentPalette = resolveCoverPalette(paletteId);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -493,6 +517,15 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
             <div className={styles.tabBody}>
               {activeTab === "cover" && (
                 <div className={styles.tabContent}>
+                  {/* Hidden Native Color Picker Input */}
+                  <input
+                    ref={colorPickerRef}
+                    type="color"
+                    className={styles.colorInputHidden}
+                    value={isCustomColor ? paletteId : currentPalette.primary}
+                    onChange={(e) => setPaletteId(e.target.value)}
+                  />
+
                   {/* Cover Type Segmented Selector */}
                   <div className={styles.coverTypeSegment}>
                     <button
@@ -516,9 +549,16 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                   {/* Mode A: Preset Patterns */}
                   {coverType === "preset" && (
                     <>
-                      {/* Palette Selection */}
+                      {/* Palette Selection (Presets + Color Picker) */}
                       <div className={styles.section}>
-                        <label className={styles.sectionLabel}>Cover Material & Color</label>
+                        <div className={styles.extractedHeader}>
+                          <label className={styles.sectionLabel}>Cover Material & Color</label>
+                          {isCustomColor && (
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                              {paletteId.toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                         <div className={styles.paletteGrid}>
                           {COVER_PALETTES.map((p) => (
                             <button
@@ -532,6 +572,21 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                               {paletteId === p.id && <span className={styles.checkMark}>✓</span>}
                             </button>
                           ))}
+
+                          {/* Custom Color Picker Swatch */}
+                          <button
+                            type="button"
+                            title="Pick custom color from palette"
+                            onClick={() => colorPickerRef.current?.click()}
+                            className={`${styles.customPickerChip} ${isCustomColor ? styles.customPickerChipActive : ""}`}
+                            style={isCustomColor ? { background: paletteId } : undefined}
+                          >
+                            {isCustomColor ? (
+                              <span className={styles.checkMark}>✓</span>
+                            ) : (
+                              <Pipette size={14} />
+                            )}
+                          </button>
                         </div>
                       </div>
 
@@ -624,6 +679,35 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                       {/* Custom Artwork Options (Fit, Overlay, Title Visibility) */}
                       {customImageUrl && (
                         <>
+                          {/* 1. Extracted Colors from Image */}
+                          {extractedColors.length > 0 && (
+                            <div className={styles.extractedSection}>
+                              <div className={styles.extractedHeader}>
+                                <div className={styles.extractedTitle}>
+                                  <Wand2 size={13} style={{ color: "var(--accent-primary)" }} />
+                                  <span>Colors from Cover Image</span>
+                                </div>
+                                <span style={{ fontSize: "10.5px", color: "var(--text-muted)" }}>
+                                  Auto-extracted from artwork
+                                </span>
+                              </div>
+                              <div className={styles.extractedGrid}>
+                                {extractedColors.map((hex) => (
+                                  <button
+                                    key={hex}
+                                    type="button"
+                                    title={`Spine color: ${hex.toUpperCase()}`}
+                                    onClick={() => setPaletteId(hex)}
+                                    className={`${styles.extractedChip} ${paletteId === hex ? styles.extractedChipSelected : ""}`}
+                                    style={{ backgroundColor: hex }}
+                                  >
+                                    {paletteId === hex && <span className={styles.checkMark}>✓</span>}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           <div className={styles.section}>
                             <label className={styles.sectionLabel}>Image Fit Mode</label>
                             <div className={styles.patternGrid}>
@@ -673,7 +757,14 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
 
                           {/* Base Spine Palette for Custom Image */}
                           <div className={styles.section}>
-                            <label className={styles.sectionLabel}>Spine & Edge Trim Color</label>
+                            <div className={styles.extractedHeader}>
+                              <label className={styles.sectionLabel}>Spine & Edge Trim Color</label>
+                              {isCustomColor && (
+                                <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                                  {paletteId.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
                             <div className={styles.paletteGrid}>
                               {COVER_PALETTES.map((p) => (
                                 <button
@@ -687,6 +778,21 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
                                   {paletteId === p.id && <span className={styles.checkMark}>✓</span>}
                                 </button>
                               ))}
+
+                              {/* Custom Color Picker Swatch */}
+                              <button
+                                type="button"
+                                title="Pick custom color"
+                                onClick={() => colorPickerRef.current?.click()}
+                                className={`${styles.customPickerChip} ${isCustomColor ? styles.customPickerChipActive : ""}`}
+                                style={isCustomColor ? { background: paletteId } : undefined}
+                              >
+                                {isCustomColor ? (
+                                  <span className={styles.checkMark}>✓</span>
+                                ) : (
+                                  <Pipette size={14} />
+                                )}
+                              </button>
                             </div>
                           </div>
                         </>
