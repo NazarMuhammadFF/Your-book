@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Documentation & AI Agent instructions (keep README.md only)
+*.md
+!README.md
+.opencode/
