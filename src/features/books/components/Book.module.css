@@ -70,7 +70,7 @@
   transform: translateX(0px) translateY(0px) translateZ(0px) rotateY(90deg)
     rotateZ(0deg) rotateX(0deg) !important;
   cursor: default !important;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition: transform var(--settle-duration, 0.38s) cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 /* 1d. Ghost Slot when original book is lifted */
@@ -85,12 +85,21 @@
   box-shadow: 0 0 0 2px var(--accent-primary);
 }
 
-/* 2. Extracted (Direct interactive 3D inspection) */
+/* 2a. Extracting from Shelf (Graceful multi-step extraction) */
+.extracting {
+  left: calc(var(--book-thickness, 44px) / 2);
+  animation: animExtractFromShelf var(--extract-duration, 0.8s) cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  pointer-events: none;
+  z-index: 100 !important;
+}
+
+/* 2b. Extracted (Direct interactive 3D inspection) */
 .extracted {
   left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
   transform-origin: 50% 50% 0px;
   cursor: pointer;
   user-select: none;
+  z-index: 100 !important;
 }
 
 .extractedDragging {
@@ -99,13 +108,14 @@
 }
 
 .extractedSettled {
-  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* 3. Returning to Shelf */
 .returning {
   left: calc(var(--book-thickness, 44px) / 2);
-  animation: animReturnFromInspection 0.44s var(--ease-smooth) forwards;
+  animation: animReturnFromInspection var(--return-duration, 0.95s) cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  z-index: 100 !important;
 }
 
 /* 4. Preview Mode (Used in Create / Edit Book Modal) */
@@ -120,17 +130,39 @@
    KEYFRAME ANIMATIONS
    ========================================================================== */
 
-/* Return sequence: rotate sideways -> slide back into shelf slot */
-@keyframes animReturnFromInspection {
+/* Extract sequence: slide fully forward out of slot -> rotate in open space -> face camera */
+@keyframes animExtractFromShelf {
   0% {
-    transform: translateX(calc(-1 * var(--book-thickness, 44px) / 2)) rotateY(0deg)
-      translateZ(90px);
+    transform: rotateY(90deg) translateX(0px) translateZ(0px);
   }
-  50% {
-    transform: rotateY(90deg) translateX(-90px);
+  42% {
+    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 15px)) translateZ(45px);
+  }
+  72% {
+    transform: translateX(calc(-0.35 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.7))
+      rotateY(35deg) translateZ(75px);
   }
   100% {
-    transform: rotateY(90deg) translateX(0px);
+    transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
+      rotateY(0deg) translateZ(var(--book-extract-z, 90px));
+  }
+}
+
+/* Return sequence: rotate sideways in open space -> align in front of slot -> slide back into slot */
+@keyframes animReturnFromInspection {
+  0% {
+    transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
+      rotateY(0deg) translateZ(var(--book-extract-z, 90px));
+  }
+  32% {
+    transform: translateX(calc(-0.35 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.7))
+      rotateY(38deg) translateZ(75px);
+  }
+  62% {
+    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 15px)) translateZ(45px);
+  }
+  100% {
+    transform: rotateY(90deg) translateX(0px) translateZ(0px);
   }
 }
 

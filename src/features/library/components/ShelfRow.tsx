@@ -107,6 +107,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
                 left: `${currentSlotLeft}px`,
                 width: `${thickness}px`,
                 height: `${maxRowHeight}px`,
+                zIndex: isActive || isReturning ? 100 : 1,
               }}
               data-book-id={book.id}
               data-book-index={globalIndex}

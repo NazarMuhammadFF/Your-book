@@ -7,10 +7,44 @@ import { AppScreen } from "./types/navigation";
 import { LibraryPage } from "./features/library/pages/LibraryPage";
 import { WorkspacePage } from "./features/workspace/pages/WorkspacePage";
 import { transitions } from "./design/motion";
+import { BookPlacement } from "./features/library/utils/shelfLayout";
+
+const BOOKS_STORAGE_KEY = "booknote_books_v1";
+const PLACEMENTS_STORAGE_KEY = "booknote_shelf_placements_v1";
+
+function loadSavedBooks(): Book[] {
+  try {
+    const raw = localStorage.getItem(BOOKS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load saved books from localStorage:", e);
+  }
+  return INITIAL_MOCK_BOOKS;
+}
+
+function loadSavedPlacements(): Record<string, BookPlacement> {
+  try {
+    const raw = localStorage.getItem(PLACEMENTS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load saved placements from localStorage:", e);
+  }
+  return {};
+}
 
 function App() {
-  // Session in-memory books state
-  const [books, setBooks] = useState<Book[]>(INITIAL_MOCK_BOOKS);
+  const [books, setBooks] = useState<Book[]>(loadSavedBooks);
+  const [shelfPlacements, setShelfPlacements] = useState<Record<string, BookPlacement>>(loadSavedPlacements);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("library");
   const [activeBookId, setActiveBookId] = useState<string | null>(null);
 
@@ -23,19 +57,47 @@ function App() {
   };
 
   const handleCreateBook = (newBook: Book) => {
-    setBooks((prev) => [newBook, ...prev]);
+    setBooks((prev) => {
+      const next = [newBook, ...prev];
+      try {
+        localStorage.setItem(BOOKS_STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.warn("Failed to save books to localStorage:", e);
+      }
+      return next;
+    });
     setActiveBookId(newBook.id);
     setCurrentScreen("workspace");
   };
 
   const handleUpdateBook = (updatedBook: Book) => {
-    setBooks((prev) =>
-      prev.map((b) => (b.id === updatedBook.id ? updatedBook : b))
-    );
+    setBooks((prev) => {
+      const next = prev.map((b) => (b.id === updatedBook.id ? updatedBook : b));
+      try {
+        localStorage.setItem(BOOKS_STORAGE_KEY, JSON.stringify(next));
+      } catch (e) {
+        console.warn("Failed to save books to localStorage:", e);
+      }
+      return next;
+    });
   };
 
   const handleReorderBooks = (newBooks: Book[]) => {
     setBooks(newBooks);
+    try {
+      localStorage.setItem(BOOKS_STORAGE_KEY, JSON.stringify(newBooks));
+    } catch (e) {
+      console.warn("Failed to save books to localStorage:", e);
+    }
+  };
+
+  const handleUpdatePlacements = (newPlacements: Record<string, BookPlacement>) => {
+    setShelfPlacements(newPlacements);
+    try {
+      localStorage.setItem(PLACEMENTS_STORAGE_KEY, JSON.stringify(newPlacements));
+    } catch (e) {
+      console.warn("Failed to save placements to localStorage:", e);
+    }
   };
 
   const handleBackToLibrary = () => {
@@ -56,6 +118,8 @@ function App() {
           >
             <LibraryPage
               books={books}
+              placements={shelfPlacements}
+              onPlacementsChange={handleUpdatePlacements}
               onOpenBook={handleOpenBook}
               onCreateBook={handleCreateBook}
               onUpdateBook={handleUpdateBook}

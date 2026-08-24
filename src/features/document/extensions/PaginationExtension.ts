@@ -210,11 +210,9 @@ function reflowPages(
   const pageMetrics = getBookPageMetrics(options.book);
   const margins = getBookPageMargins(options.book);
 
-  const contentTop = margins.top + 36;
-  const contentBottom = margins.bottom + 36;
   const maxContentHeight = Math.max(
     140,
-    pageMetrics.pageHeight - contentTop - contentBottom
+    pageMetrics.pageHeight - margins.top - margins.bottom
   );
 
   const pageDoms = Array.from(
@@ -250,8 +248,8 @@ function reflowPages(
     if (!pageDom) break;
 
     const pageRect = pageDom.getBoundingClientRect();
-    const contentTopLimit = pageRect.top + margins.top + 36;
-    const contentBottomLimit = contentTopLimit + maxContentHeight;
+    const contentTopLimit = pageRect.top + margins.top;
+    const contentBottomLimit = pageRect.bottom - margins.bottom;
 
     const childDoms = Array.from(pageDom.children).filter(
       (el) => !el.classList.contains("booknote-page-header") && !el.classList.contains("booknote-page-footer")

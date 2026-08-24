@@ -4,6 +4,11 @@ import { Book as IBook, getBookDimensions } from "../types/book";
 import { BookCover } from "./BookCover";
 import { BackCover } from "./BackCover";
 import { COVER_PALETTES } from "../../../design/typography";
+import {
+  BOOKSHELF_EXTRACT_DURATION_MS,
+  BOOKSHELF_RETURN_DURATION_MS,
+  BOOKSHELF_SETTLE_DURATION_MS,
+} from "../../../design/motion";
 
 export interface BookProps {
   book: IBook;
@@ -93,11 +98,20 @@ export const Book: React.FC<BookProps> = ({
   }, [activeSide, isDragging]);
 
   // Reset angle when newly extracted
+  const [isExtracting, setIsExtracting] = useState<boolean>(false);
+
   useEffect(() => {
     if (isActive) {
       setRotationY(0);
       setRotationX(0);
       setDragOffsetY(0);
+      setIsExtracting(true);
+      const timer = window.setTimeout(() => {
+        setIsExtracting(false);
+      }, BOOKSHELF_EXTRACT_DURATION_MS);
+      return () => clearTimeout(timer);
+    } else {
+      setIsExtracting(false);
     }
   }, [isActive]);
 
@@ -315,8 +329,13 @@ export const Book: React.FC<BookProps> = ({
     stateClass = styles.previewMode;
     transformStyle = `rotateY(${previewRotationY}deg) rotateX(${previewRotationX}deg)`;
   } else if (isActive) {
-    stateClass = `${styles.extracted} ${isDragging ? styles.extractedDragging : styles.extractedSettled}`;
-    transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 90px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+    if (isExtracting) {
+      stateClass = styles.extracting;
+      transformStyle = undefined;
+    } else {
+      stateClass = `${styles.extracted} ${isDragging ? styles.extractedDragging : styles.extractedSettled}`;
+      transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 90px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+    }
   } else if (isLifted) {
     stateClass = styles.lifted;
   } else if (isSettling) {
@@ -397,6 +416,10 @@ export const Book: React.FC<BookProps> = ({
           "--book-spine-text": palette.textColor,
           "--book-primary": palette.primary,
           "--book-accent": palette.accent,
+          "--edge-compensation-x": `${edgeCompensationX}px`,
+          "--extract-duration": `${BOOKSHELF_EXTRACT_DURATION_MS}ms`,
+          "--return-duration": `${BOOKSHELF_RETURN_DURATION_MS}ms`,
+          "--settle-duration": `${BOOKSHELF_SETTLE_DURATION_MS}ms`,
         } as React.CSSProperties
       }
     >

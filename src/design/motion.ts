@@ -4,9 +4,10 @@
  */
 
 export const READER_FLIP_DURATION_MS = 560;
-export const BOOKSHELF_EXTRACT_DURATION_MS = 520;
+export const BOOKSHELF_EXTRACT_DURATION_MS = 800;
 export const BOOKSHELF_FLIP_DURATION_MS = 420;
-export const BOOKSHELF_RETURN_DURATION_MS = 480;
+export const BOOKSHELF_RETURN_DURATION_MS = 950;
+export const BOOKSHELF_SETTLE_DURATION_MS = 380;
 
 export const transitions = {
   // Heavy physical objects (books, shelves)
@@ -16,7 +17,7 @@ export const transitions = {
     stiffness: 240,
     damping: 22,
   },
-  
+
   // Interactive UI controls (buttons, tabs, toggles)
   springControl: {
     type: "spring",

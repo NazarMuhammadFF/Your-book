@@ -5,7 +5,10 @@ import styles from "./Bookshelf.module.css";
 import { Book as IBook } from "../../books/types/book";
 import { ShelfRow } from "./ShelfRow";
 import { Book as DraggedBook } from "../../books/components/Book";
-import { BOOKSHELF_RETURN_DURATION_MS } from "../../../design/motion";
+import {
+  BOOKSHELF_RETURN_DURATION_MS,
+  BOOKSHELF_SETTLE_DURATION_MS,
+} from "../../../design/motion";
 import {
   computeShelfRows,
   generateInitialPlacements,
@@ -15,6 +18,8 @@ import {
 
 export interface BookshelfProps {
   books: IBook[];
+  placements?: Record<string, BookPlacement>;
+  onPlacementsChange?: (placements: Record<string, BookPlacement>) => void;
   onBookClick: (book: IBook) => void;
   onAddNewClick: () => void;
   onEditBook?: (book: IBook) => void;
@@ -38,6 +43,8 @@ interface ActiveDrag {
 
 export const Bookshelf: React.FC<BookshelfProps> = ({
   books,
+  placements: externalPlacements,
+  onPlacementsChange,
   onBookClick,
   onAddNewClick: _onAddNewClick,
   onEditBook,
@@ -51,15 +58,25 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   const [activeSide, setActiveSide] = useState<"front" | "back">("front");
   const [returningBookId, setReturningBookId] = useState<string | null>(null);
 
-  // Free shelf placements state (session-based)
+  // Free shelf placements state (initialized with external placements if provided)
   const [placements, setPlacements] = useState<Record<string, BookPlacement>>(() =>
-    generateInitialPlacements(books, 920)
+    generateInitialPlacements(books, 920, externalPlacements || {})
   );
 
   // Unified Pointer Drag & Reorder State
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const activeDragRef = useRef<ActiveDrag | null>(null);
   activeDragRef.current = activeDrag;
+
+  // Sync external placements when provided from outside
+  useEffect(() => {
+    if (externalPlacements && Object.keys(externalPlacements).length > 0) {
+      setPlacements((prev) => ({
+        ...prev,
+        ...externalPlacements,
+      }));
+    }
+  }, [externalPlacements]);
 
   // Measure container width responsively
   useEffect(() => {
@@ -87,9 +104,14 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   useEffect(() => {
     setPlacements((prev) => {
       const availableWidth = Math.max(320, containerWidth - 80);
-      return generateInitialPlacements(books, availableWidth, prev);
+      const merged = { ...prev, ...(externalPlacements || {}) };
+      const updated = generateInitialPlacements(books, availableWidth, merged);
+      if (Object.keys(updated).length !== Object.keys(merged).length) {
+        onPlacementsChange?.(updated);
+      }
+      return updated;
     });
-  }, [books, containerWidth]);
+  }, [books, containerWidth, externalPlacements, onPlacementsChange]);
 
   // If search filtering removes the active book, safely reset it
   useEffect(() => {
@@ -250,6 +272,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         },
       };
       setPlacements(nextPlacements);
+      onPlacementsChange?.(nextPlacements);
 
       // 3. Complete settling animation, sort books by position, and clear overlay
       setTimeout(() => {
@@ -262,7 +285,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
 
         onReorderBooks?.(sorted);
         setActiveDrag(null);
-      }, 280);
+      }, BOOKSHELF_SETTLE_DURATION_MS);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -450,7 +473,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
                 transformStyle: "preserve-3d",
                 transition:
                   activeDrag.status === "settling"
-                    ? "left 0.28s cubic-bezier(0.22, 1, 0.36, 1), top 0.28s cubic-bezier(0.22, 1, 0.36, 1), filter 0.28s cubic-bezier(0.22, 1, 0.36, 1)"
+                    ? `left ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), top ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), filter ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
                     : "none",
                 filter:
                   activeDrag.status === "settling"

@@ -5,8 +5,12 @@ import { LibraryHeader } from "../components/LibraryHeader";
 import { Bookshelf } from "../components/Bookshelf";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 
+import { BookPlacement } from "../utils/shelfLayout";
+
 export interface LibraryPageProps {
   books: IBook[];
+  placements?: Record<string, BookPlacement>;
+  onPlacementsChange?: (placements: Record<string, BookPlacement>) => void;
   onOpenBook: (book: IBook) => void;
   onCreateBook: (book: IBook) => void;
   onUpdateBook?: (book: IBook) => void;
@@ -15,6 +19,8 @@ export interface LibraryPageProps {
 
 export const LibraryPage: React.FC<LibraryPageProps> = ({
   books,
+  placements,
+  onPlacementsChange,
   onOpenBook,
   onCreateBook,
   onUpdateBook,
@@ -58,6 +64,8 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
         {filteredBooks.length > 0 ? (
           <Bookshelf
             books={filteredBooks}
+            placements={placements}
+            onPlacementsChange={onPlacementsChange}
             onBookClick={onOpenBook}
             onAddNewClick={() => {
               setEditingBook(null);

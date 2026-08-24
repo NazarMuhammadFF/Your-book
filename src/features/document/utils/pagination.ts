@@ -22,18 +22,18 @@ export function computePaginationMetrics(book: Book): PaginationMetrics {
   const typography = book.typography;
   const margins = getBookPageMargins(book);
 
-  const contentTop = margins.top + 45;
-  const contentBottom = margins.bottom + 45;
-  const fontSize = typography.fontSize || 17;
-  const lineHeight = typography.lineHeight || 1.65;
+  const contentTop = margins.top;
+  const contentBottom = margins.bottom;
+  const fontSize = typography.fontSize || 15.5;
+  const lineHeight = typography.lineHeight || 1.60;
   const lineHeightPx = Math.round(fontSize * lineHeight);
   const availableWidth = Math.max(160, pageMetrics.pageWidth - margins.left - margins.right);
   const availableHeight = Math.max(
     180,
-    pageMetrics.pageHeight - contentTop - contentBottom - lineHeightPx
+    pageMetrics.pageHeight - margins.top - margins.bottom
   );
 
-  const paragraphSpacing = typography.paragraphSpacing || 16;
+  const paragraphSpacing = typography.paragraphSpacing || 12;
 
   const fontConfig =
     FONT_FAMILIES.find((f) => f.id === typography.fontFamilyId) || FONT_FAMILIES[0];
