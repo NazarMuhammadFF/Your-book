@@ -85,9 +85,10 @@
   box-shadow: 0 0 0 2px var(--accent-primary);
 }
 
-/* 2a. Extracting from Shelf (Graceful sequential extraction: slide out first, then flip) */
+/* 2a. Extracting from Shelf (Graceful sequential extraction: slide straight out, then flip in-place) */
 .extracting {
-  left: calc(var(--book-thickness, 44px) / 2);
+  left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
+  transform-origin: 50% 50% 0px;
   animation: animExtractFromShelf var(--extract-duration, 0.85s) cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
   pointer-events: none;
   z-index: 100 !important;
@@ -111,9 +112,10 @@
   transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-/* 3. Returning to Shelf (Sequential return: flip sideways in foreground, then slide back into slot) */
+/* 3. Returning to Shelf (Sequential return: flip in-place in foreground, then slide back into slot) */
 .returning {
-  left: calc(var(--book-thickness, 44px) / 2);
+  left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
+  transform-origin: 50% 50% 0px;
   animation: animReturnFromInspection var(--return-duration, 0.9s) cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
   z-index: 100 !important;
 }
@@ -130,45 +132,45 @@
    KEYFRAME ANIMATIONS
    ========================================================================== */
 
-/* Extract sequence: slide dead straight forward out of slot -> only when fully in front, rotate to face camera */
+/* Extract sequence: slide dead straight forward out of slot -> flip directly in-place without swinging */
 @keyframes animExtractFromShelf {
   0% {
-    transform: rotateY(90deg) translateX(0px);
+    transform: rotateY(90deg) translateZ(calc(-0.5 * var(--cover-width, 165px))) translateX(0px);
   }
   48% {
-    /* Pure linear slide straight forward along slot axis: 100% sideways at 90deg, pulled fully clear of shelf */
-    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 40px));
+    /* Slide straight forward along center slot axis into foreground */
+    transform: rotateY(90deg) translateZ(var(--book-extract-z, 140px)) translateX(0px);
   }
-  76% {
-    /* Now completely clear in open air in front, smoothly turning */
-    transform: translateX(calc(-0.25 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.75))
-      rotateY(25deg) translateZ(135px);
+  74% {
+    /* Flip directly in-place around center axis */
+    transform: rotateY(30deg) translateZ(var(--book-extract-z, 140px))
+      translateX(calc(var(--edge-compensation-x, 0px) * 0.75));
   }
   100% {
-    /* Settled facing camera in the forward foreground */
-    transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
-      rotateY(0deg) translateZ(var(--book-extract-z, 140px));
+    /* Settled facing camera in center foreground */
+    transform: rotateY(0deg) translateZ(var(--book-extract-z, 140px))
+      translateX(var(--edge-compensation-x, 0px));
   }
 }
 
-/* Return sequence: turn sideways while in foreground -> align in front of slot -> slide dead straight back into slot */
+/* Return sequence: flip in-place to sideways -> slide dead straight back into slot */
 @keyframes animReturnFromInspection {
   0% {
-    transform: translateX(calc(-0.5 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px)))
-      rotateY(0deg) translateZ(var(--book-extract-z, 140px));
+    transform: rotateY(0deg) translateZ(var(--book-extract-z, 140px))
+      translateX(var(--edge-compensation-x, 0px));
   }
   26% {
-    /* Rotate sideways while in open air */
-    transform: translateX(calc(-0.25 * var(--cover-width, 165px) + var(--edge-compensation-x, 0px) * 0.75))
-      rotateY(25deg) translateZ(135px);
+    /* Flip directly in-place to sideways in foreground */
+    transform: rotateY(30deg) translateZ(var(--book-extract-z, 140px))
+      translateX(calc(var(--edge-compensation-x, 0px) * 0.75));
   }
   50% {
-    /* Aligned 100% sideways directly in front of slot opening */
-    transform: rotateY(90deg) translateX(calc(-1 * var(--cover-width, 165px) - 40px));
+    /* Aligned 100% sideways on center slot axis in foreground */
+    transform: rotateY(90deg) translateZ(var(--book-extract-z, 140px)) translateX(0px);
   }
   100% {
-    /* Pure linear slide straight back into slot */
-    transform: rotateY(90deg) translateX(0px);
+    /* Slide dead straight back into slot */
+    transform: rotateY(90deg) translateZ(calc(-0.5 * var(--cover-width, 165px))) translateX(0px);
   }
 }
 
