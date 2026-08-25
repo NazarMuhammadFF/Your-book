@@ -8,6 +8,9 @@ export const BOOKSHELF_EXTRACT_DURATION_MS = 850;
 export const BOOKSHELF_FLIP_DURATION_MS = 420;
 export const BOOKSHELF_RETURN_DURATION_MS = 900;
 export const BOOKSHELF_SETTLE_DURATION_MS = 380;
+/** Delay sebelum buku kedua mulai ditarik keluar saat berganti buku (ms).
+ * Nilai ini diatur agar buku pertama sudah hampir masuk ke rak sebelum buku kedua keluar. */
+export const BOOKSHELF_SWITCH_DELAY_MS = 520;
 
 export const transitions = {
   // Heavy physical objects (books, shelves)

@@ -8,6 +8,7 @@ import { Book as DraggedBook } from "../../books/components/Book";
 import {
   BOOKSHELF_RETURN_DURATION_MS,
   BOOKSHELF_SETTLE_DURATION_MS,
+  BOOKSHELF_SWITCH_DELAY_MS,
 } from "../../../design/motion";
 import {
   computeShelfRows,
@@ -57,6 +58,19 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   const [activeShelfBookId, setActiveShelfBookId] = useState<string | null>(null);
   const [activeSide, setActiveSide] = useState<"front" | "back">("front");
   const [returningBookId, setReturningBookId] = useState<string | null>(null);
+
+  // Switch & return timers for sequential book transition (finish returning first before extracting next)
+  const switchTimerRef = useRef<number | null>(null);
+  const returnTimerRef = useRef<number | null>(null);
+  const returnDeadlineRef = useRef<number>(0);
+
+  // Clear timers on unmount
+  useEffect(() => {
+    return () => {
+      if (switchTimerRef.current) clearTimeout(switchTimerRef.current);
+      if (returnTimerRef.current) clearTimeout(returnTimerRef.current);
+    };
+  }, []);
 
   // Free shelf placements state (initialized with external placements if provided)
   const [placements, setPlacements] = useState<Record<string, BookPlacement>>(() =>
@@ -113,12 +127,15 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     });
   }, [books, containerWidth, externalPlacements, onPlacementsChange]);
 
-  // If search filtering removes the active book, safely reset it
+  // If search filtering removes the active or returning book, safely reset it
   useEffect(() => {
     if (activeShelfBookId && !books.some((b) => b.id === activeShelfBookId)) {
       setActiveShelfBookId(null);
     }
-  }, [books, activeShelfBookId]);
+    if (returningBookId && !books.some((b) => b.id === returningBookId)) {
+      setReturningBookId(null);
+    }
+  }, [books, activeShelfBookId, returningBookId]);
 
   // Active inspected book object
   const activeBook = useMemo(
@@ -306,7 +323,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     clientY: number,
     bookRect: DOMRect
   ) => {
-    if (activeShelfBookId) return;
+    if (activeShelfBookId || returningBookId) return;
 
     const sourceIndex = books.findIndex((b) => b.id === book.id);
     if (sourceIndex === -1) return;
@@ -334,30 +351,92 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     if (activeDragRef.current) return;
     if (activeShelfBookId === book.id) return;
 
+    // Case 1: Another book is currently extracted -> Return it to shelf first, then extract the new book
     if (activeShelfBookId) {
       const prevId = activeShelfBookId;
+
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+        switchTimerRef.current = null;
+      }
+      if (returnTimerRef.current) {
+        clearTimeout(returnTimerRef.current);
+        returnTimerRef.current = null;
+      }
+
+      // Step 1: Initial book starts returning to shelf
       setReturningBookId(prevId);
-      setTimeout(() => {
+      setActiveShelfBookId(null);
+      returnDeadlineRef.current = Date.now() + BOOKSHELF_RETURN_DURATION_MS;
+
+      // Ensure returningBookId resets once the full return animation finishes
+      returnTimerRef.current = window.setTimeout(() => {
         setReturningBookId((curr) => (curr === prevId ? null : curr));
+        returnTimerRef.current = null;
       }, BOOKSHELF_RETURN_DURATION_MS);
+
+      // Step 2: Next book starts extracting at BOOKSHELF_SWITCH_DELAY_MS (when first book is almost in)
+      switchTimerRef.current = window.setTimeout(() => {
+        setActiveShelfBookId(book.id);
+        setActiveSide("front");
+        switchTimerRef.current = null;
+      }, BOOKSHELF_SWITCH_DELAY_MS);
+      return;
     }
 
+    // Case 2: A book is currently in the middle of returning to shelf -> Wait for switch delay threshold, then extract
+    if (returningBookId) {
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+        switchTimerRef.current = null;
+      }
+      const elapsed = BOOKSHELF_RETURN_DURATION_MS - Math.max(0, returnDeadlineRef.current - Date.now());
+      const remainingDelay = Math.max(0, BOOKSHELF_SWITCH_DELAY_MS - elapsed);
+
+      switchTimerRef.current = window.setTimeout(() => {
+        setActiveShelfBookId(book.id);
+        setActiveSide("front");
+        switchTimerRef.current = null;
+      }, remainingDelay);
+      return;
+    }
+
+    // Case 3: No active/returning books -> Immediate extract
     setActiveShelfBookId(book.id);
     setActiveSide("front");
   };
 
   const handleReturnToShelf = () => {
+    // Cancel any pending queued book switch
+    if (switchTimerRef.current) {
+      clearTimeout(switchTimerRef.current);
+      switchTimerRef.current = null;
+    }
+
     if (!activeShelfBookId) return;
     const bookId = activeShelfBookId;
     setActiveShelfBookId(null);
     setReturningBookId(bookId);
+    returnDeadlineRef.current = Date.now() + BOOKSHELF_RETURN_DURATION_MS;
 
-    setTimeout(() => {
+    if (returnTimerRef.current) {
+      clearTimeout(returnTimerRef.current);
+    }
+    returnTimerRef.current = window.setTimeout(() => {
       setReturningBookId((curr) => (curr === bookId ? null : curr));
+      returnTimerRef.current = null;
     }, BOOKSHELF_RETURN_DURATION_MS);
   };
 
   const handleOpenBook = (book: IBook) => {
+    if (switchTimerRef.current) {
+      clearTimeout(switchTimerRef.current);
+      switchTimerRef.current = null;
+    }
+    if (returnTimerRef.current) {
+      clearTimeout(returnTimerRef.current);
+      returnTimerRef.current = null;
+    }
     setActiveShelfBookId(null);
     setReturningBookId(null);
     onBookClick(book);
@@ -386,13 +465,13 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       ref={containerRef}
       className={styles.bookshelfContainer}
       onClick={() => {
-        if (activeShelfBookId) {
+        if (activeShelfBookId || returningBookId) {
           handleReturnToShelf();
         }
       }}
     >
       {/* Full-screen backdrop overlay rendered to document.body outside 3D transforms */}
-      {activeShelfBookId &&
+      {(activeShelfBookId || returningBookId) &&
         createPortal(
           <div
             className={styles.fullScreenBackdrop}
