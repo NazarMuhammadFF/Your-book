@@ -243,8 +243,43 @@ export function generateInitialPlacements(
 }
 
 /**
+ * Shared compaction passes over one ordered shelf row.
+ * Forward pass: pushes overlapping successors right, ONLY as far as physically
+ * required — untouched rows keep their exact original spacing.
+ * Backward pass: full cascade pulling the tail back inside the right boundary.
+ */
+function compactRow<T extends { x: number; thickness: number }>(
+  items: T[],
+  availableWidth: number
+): void {
+  // NOTE: callers must supply items in ascending x order — sorting here would
+  // destroy the intentional positional insertion of the drop target.
+  // Forward: prevent overlap left-to-right with minimum 2px slit
+  for (let i = 0; i < items.length - 1; i++) {
+    const minNextX = items[i].x + items[i].thickness + 2;
+    if (items[i + 1].x < minNextX) {
+      items[i + 1].x = minNextX;
+    }
+  }
+
+  // Backward: prevent right-boundary overflow, cascading fully leftward
+  for (let i = items.length - 1; i >= 0; i--) {
+    const limit =
+      i < items.length - 1
+        ? items[i + 1].x - items[i].thickness - 2
+        : availableWidth - items[i].thickness;
+    if (items[i].x > limit) {
+      items[i].x = Math.max(0, limit);
+    }
+  }
+}
+
+/**
  * Resolves non-overlapping positions for all books on a given shelf row.
- * If dragPreview is active on this row, smoothly shifts neighboring books to open space.
+ * Books keep their exact positions unless something physically overlaps.
+ * If dragPreview is active on this row, the drop point joins the row as a
+ * virtual item so crowded neighbors shift aside minimally (insertion behavior)
+ * while free/loose areas remain completely undisturbed.
  */
 export function resolveRowPlacements(
   rowBooks: IBook[],
@@ -254,8 +289,15 @@ export function resolveRowPlacements(
 ): Array<{ book: IBook; x: number; thickness: number; height: number }> {
   if (rowBooks.length === 0) return [];
 
-  // 1. Sort books by their intended X position
-  const items = rowBooks.map((book) => {
+  type RowItem = {
+    book: IBook | null;
+    x: number;
+    thickness: number;
+    height: number;
+  };
+
+  // 1. Collect books sorted by their intended X position
+  const items: RowItem[] = rowBooks.map((book) => {
     const thickness = getBookVisualThickness(book);
     const { height } = getBookDimensions(book);
     const rawX = placements[book.id]?.x ?? 0;
@@ -263,58 +305,55 @@ export function resolveRowPlacements(
     return { book, x: clampedX, thickness, height };
   });
 
-  items.sort((a, b) => a.x - b.x);
-
-  // 2. If drag preview active on this row, open space around drag target
+  // 2. Drop target joins the row positionally: inserted BEFORE the first book
+  // whose body extends past the drop point. Crowded neighbors therefore shift
+  // right just enough to open the gap exactly under the cursor, while drops in
+  // free or loose areas leave every neighbor untouched.
   if (dragPreview) {
-    const previewStart = dragPreview.x;
-    const previewEnd = dragPreview.x + dragPreview.width + 6;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const itemEnd = item.x + item.thickness;
-
-      // If item overlaps the reserved drag preview zone, shift it to the right
-      if (item.x < previewEnd && itemEnd > previewStart) {
-        if (item.x + item.thickness / 2 >= previewStart + dragPreview.width / 2) {
-          item.x = previewEnd + 2;
-        } else {
-          item.x = Math.max(0, previewStart - item.thickness - 2);
-        }
-      }
-    }
-    // Re-sort after drag preview shift
-    items.sort((a, b) => a.x - b.x);
+    const dropX = Math.max(
+      0,
+      Math.min(availableWidth - dragPreview.width, dragPreview.x)
+    );
+    let insertIndex = items.findIndex((item) => item.x + item.thickness > dropX);
+    if (insertIndex === -1) insertIndex = items.length;
+    items.splice(insertIndex, 0, {
+      book: null,
+      x: dropX,
+      thickness: dragPreview.width,
+      height: 0,
+    });
   }
 
-  // 3. Prevent physical overlap from left to right with minimum 2px slit
-  for (let i = 0; i < items.length - 1; i++) {
-    const current = items[i];
-    const next = items[i + 1];
-    const minNextX = current.x + current.thickness + 2;
-    if (next.x < minNextX) {
-      next.x = minNextX;
-    }
-  }
+  compactRow(items, availableWidth);
 
-  // 4. Prevent overflow at right boundary by shifting backwards safely
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    const maxX = availableWidth - item.thickness;
-    if (item.x > maxX) {
-      item.x = Math.max(0, maxX);
-      // Push preceding item left if it now overlaps
-      if (i > 0) {
-        const prev = items[i - 1];
-        const maxPrevX = item.x - prev.thickness - 2;
-        if (prev.x > maxPrevX) {
-          prev.x = Math.max(0, maxPrevX);
-        }
-      }
-    }
-  }
+  return items.filter(
+    (item): item is { book: IBook; x: number; thickness: number; height: number } =>
+      item.book !== null
+  );
+}
 
-  return items;
+/**
+ * Returns the final committed X for a dropped book, consistent with the same
+ * minimal-displacement compaction used for the rest of the row.
+ */
+export function resolveDropPlacementX(
+  resolvedItems: Array<{ x: number; thickness: number }>,
+  previewX: number,
+  dropThickness: number,
+  availableWidth: number
+): number {
+  const items: Array<{ x: number; thickness: number; isDrop?: boolean }> =
+    resolvedItems.map((item) => ({ x: item.x, thickness: item.thickness }));
+  const dropX = Math.max(0, Math.min(availableWidth - dropThickness, previewX));
+  let insertIndex = items.findIndex((item) => item.x + item.thickness > dropX);
+  if (insertIndex === -1) insertIndex = items.length;
+  items.splice(insertIndex, 0, {
+    x: dropX,
+    thickness: dropThickness,
+    isDrop: true,
+  });
+  compactRow(items, availableWidth);
+  return items.find((item) => item.isDrop)?.x ?? previewX;
 }
 
 /**

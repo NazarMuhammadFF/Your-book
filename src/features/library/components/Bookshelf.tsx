@@ -13,6 +13,8 @@ import {
 import {
   computeShelfRows,
   generateInitialPlacements,
+  resolveRowPlacements,
+  resolveDropPlacementX,
   BookPlacement,
   PackedShelfRow,
 } from "../utils/shelfLayout";
@@ -332,6 +334,28 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         return;
       }
 
+      // Resolve final row layout first: neighbors shift only as far as physically
+      // required, loose spacing elsewhere is untouched, and the dropped book gets
+      // its exact committed x from the same compaction.
+      const availableWidth = Math.max(320, containerWidth - 80);
+      const targetRowBooks = books.filter((b) => {
+        if (b.id === current.book.id) return false;
+        const p = placements[b.id];
+        return (p ? p.rowIndex : 0) === current.targetRowIndex;
+      });
+      const resolvedRow = resolveRowPlacements(
+        targetRowBooks,
+        placements,
+        availableWidth,
+        { x: current.targetX, width: current.slotWidth }
+      );
+      const dropX = resolveDropPlacementX(
+        resolvedRow,
+        current.targetX,
+        current.slotWidth,
+        availableWidth
+      );
+
       // Find viewport coordinates of the target drop position on the shelf
       let settleX = clientX - current.grabOffsetX;
       let settleY = clientY - current.grabOffsetY;
@@ -342,7 +366,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         );
         if (targetRowEl) {
           const rowRect = targetRowEl.getBoundingClientRect();
-          settleX = rowRect.left + 40 + current.targetX;
+          settleX = rowRect.left + 40 + dropX;
           settleY = rowRect.top + Math.max(0, rowRect.height - 33 - current.slotHeight);
         }
       }
@@ -357,14 +381,21 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         });
       }
 
-      // Commit placement to state
-      const nextPlacements: Record<string, BookPlacement> = {
-        ...placements,
-        [current.book.id]: {
-          bookId: current.book.id,
+      // Commit placement: persist the resolved x of EVERY book in the target row,
+      // so the post-drop layout matches the preview exactly instead of re-deriving
+      // overlaps from stale stored positions.
+      const nextPlacements: Record<string, BookPlacement> = { ...placements };
+      for (const item of resolvedRow) {
+        nextPlacements[item.book.id] = {
+          bookId: item.book.id,
           rowIndex: current.targetRowIndex,
-          x: current.targetX,
-        },
+          x: Math.round(item.x),
+        };
+      }
+      nextPlacements[current.book.id] = {
+        bookId: current.book.id,
+        rowIndex: current.targetRowIndex,
+        x: Math.round(dropX),
       };
       setPlacements(nextPlacements);
       onPlacementsChange?.(nextPlacements);
