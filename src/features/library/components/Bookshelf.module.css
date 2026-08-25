@@ -84,6 +84,8 @@
   justify-content: center;
   transform-style: preserve-3d;
   z-index: auto;
+  /* Neighbors glide aside when the drag gap opens or closes */
+  transition: left 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .liftedSlot {
@@ -97,6 +99,89 @@
   border-radius: var(--radius-book-cover);
   outline: none;
   background: transparent;
+}
+
+/* Search match highlight — lives on the Book root so it follows the book's exact
+   size and lean angle. Beam/glow adapt to the book's own spine color via
+   --book-spine-color (set inline by the Book component). */
+.searchHighlightBook {
+  position: relative;
+}
+
+/* Soft light beam cast on the shelf behind the book, tinted with its spine color */
+.searchHighlightBook::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 300%;
+  min-width: 90px;
+  height: 150%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 50% 92%,
+    var(--book-spine-color, var(--accent-primary)) 0%,
+    transparent 68%
+  );
+  filter: blur(9px);
+  opacity: 0.85;
+  pointer-events: none;
+  animation: searchBeamPulse 1.6s infinite alternate ease-in-out;
+}
+
+@keyframes searchBeamPulse {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* White dashed frame hugging the book, drawn as an overlay because CSS outline
+   is unreliable on preserve-3d containers in Chromium/WebView2 */
+.searchHighlightBook::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border: 3px dashed rgba(255, 255, 255, 0.95);
+  border-radius: calc(var(--radius-book-cover) + 2px);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.28),
+    inset 0 0 8px rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+  animation: searchFramePulse 1.6s infinite alternate ease-in-out;
+}
+
+@keyframes searchFramePulse {
+  from {
+    opacity: 0.7;
+    box-shadow:
+      0 0 6px rgba(255, 255, 255, 0.18),
+      inset 0 0 5px rgba(255, 255, 255, 0.1);
+  }
+  to {
+    opacity: 1;
+    box-shadow:
+      0 0 14px rgba(255, 255, 255, 0.38),
+      inset 0 0 10px rgba(255, 255, 255, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .searchHighlightBook::before,
+  .searchHighlightBook::after {
+    animation: none;
+  }
+
+  .searchHighlightBook::before {
+    opacity: 0.8;
+  }
+
+  .searchHighlightBook::after {
+    opacity: 1;
+  }
 }
 
 /* Temporary Drop Gap Slot opened up dynamically during drag */
@@ -152,6 +237,80 @@
   z-index: 9999;
   transform-style: preserve-3d;
   perspective: 1100px;
+}
+
+/* Inner presentation layer of the dragged book. The outer ref-driven layer only
+   follows the pointer; pickup, trash hover and landing animations live here. */
+.dragInner {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1), filter 0.2s ease-out,
+    opacity 0.3s ease-out;
+}
+
+/* Pickup: soft pop as the book leaves the shelf */
+.dragInnerActive {
+  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.5)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26));
+  animation: dragLiftIn 240ms cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+@keyframes dragLiftIn {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.7;
+  }
+  60% {
+    transform: scale(1.06) rotateZ(1.2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotateZ(0deg);
+  }
+}
+
+/* Hovering over the trash bin */
+.dragInnerShrunk {
+  transform: scale(0.38) rotate(8deg);
+  filter: drop-shadow(0 8px 16px rgba(229, 77, 66, 0.6));
+}
+
+/* Dropping into the trash cavity */
+.dragInnerTrashDrop {
+  transform: scale(0.1) rotate(18deg) translateY(40px);
+  opacity: 0;
+  filter: none;
+  transition: transform 380ms cubic-bezier(0.4, 0, 0.2, 1), opacity 380ms ease-out,
+    filter 380ms ease-out;
+}
+
+/* Landing on the shelf: weighted squash-and-recover, no flipping */
+.dragInnerLand {
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22));
+  animation: dragLandSquash 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dragLandSquash {
+  0% {
+    transform: scale(1.05, 0.9);
+  }
+  55% {
+    transform: scale(0.98, 1.04);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dragInnerActive,
+  .dragInnerLand {
+    animation: none;
+  }
+
+  .dragInner {
+    transition-duration: 0.01ms;
+  }
 }
 
 .floatingDragBook {

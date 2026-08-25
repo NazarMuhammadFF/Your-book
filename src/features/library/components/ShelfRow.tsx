@@ -9,6 +9,7 @@ export interface ShelfRowProps {
   books: IBook[];
   startIndex: number;
   rowIndex?: number;
+  highlightedBookIds?: Set<string>;
   activeBookId: string | null;
   activeSide: "front" | "back";
   returningBookId: string | null;
@@ -31,6 +32,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
   books,
   startIndex,
   rowIndex = 0,
+  highlightedBookIds,
   activeBookId,
   activeSide,
   returningBookId,
@@ -92,6 +94,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
           const isReturning = returningBookId === book.id;
           const isDraggingThis = draggingBookId === book.id;
           const currentSlotLeft = 40 + x;
+          const isSearchHighlighted = highlightedBookIds?.has(book.id) ?? false;
 
           const slotStateClass = isDraggingThis
             ? isSettling
@@ -129,6 +132,11 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
                 slotLeft={currentSlotLeft}
                 containerWidth={containerWidth}
                 isInteractive={!isDraggingThis}
+                className={
+                  isSearchHighlighted && !isDraggingThis
+                    ? styles.searchHighlightBook
+                    : ""
+                }
               />
             </div>
           );

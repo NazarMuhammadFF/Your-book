@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Sliders } from "lucide-react";
 import styles from "./Bookshelf.module.css";
@@ -19,6 +19,7 @@ import {
 
 export interface BookshelfProps {
   books: IBook[];
+  highlightedBookIds?: Set<string>;
   placements?: Record<string, BookPlacement>;
   onPlacementsChange?: (placements: Record<string, BookPlacement>) => void;
   onBookClick: (book: IBook) => void;
@@ -35,18 +36,16 @@ interface ActiveDrag {
   sourceIndex: number;
   targetRowIndex: number;
   targetX: number;
-  pointerX: number; // Viewport clientX
-  pointerY: number; // Viewport clientY
   grabOffsetX: number; // Offset from left edge of book slot to clientX
   grabOffsetY: number; // Offset from top edge of book slot to clientY
   slotWidth: number; // Exact thickness of book
   slotHeight: number; // Exact height of row/book
   status: "dragging" | "settling" | "dropping_to_trash";
-  settleTarget?: { x: number; y: number };
 }
 
 export const Bookshelf: React.FC<BookshelfProps> = ({
   books,
+  highlightedBookIds,
   placements: externalPlacements,
   onPlacementsChange,
   onBookClick,
@@ -87,6 +86,13 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   const [isOverTrashState, setIsOverTrashState] = useState<boolean>(false);
   const activeDragRef = useRef<ActiveDrag | null>(null);
   activeDragRef.current = activeDrag;
+
+  // Live drag position tracked outside React state: the overlay follows the pointer
+  // via direct DOM transform writes so ordinary pointermove frames never re-render the shelf.
+  const dragOverlayRef = useRef<HTMLDivElement | null>(null);
+  const livePointerRef = useRef({ x: 0, y: 0 });
+  const isOverTrashRef = useRef(false);
+  const lastDragTargetRef = useRef<{ rowIndex: number; x: number } | null>(null);
 
   // Sync external placements when provided from outside
   useEffect(() => {
@@ -223,11 +229,12 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     [containerWidth]
   );
 
-  // Global Pointer Event Listeners for 60fps Smooth Drag Tracking and Drop
+  // Global Pointer Event Listeners for smooth drag tracking and drop
   useEffect(() => {
     if (!activeDrag || activeDrag.status !== "dragging") return;
 
     const handlePointerMove = (e: PointerEvent) => {
+      livePointerRef.current = { x: e.clientX, y: e.clientY };
       const current = activeDragRef.current;
       if (!current || current.status !== "dragging") return;
 
@@ -242,38 +249,48 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
           e.clientY >= rect.top - 24 &&
           e.clientY <= rect.bottom + 24;
       }
+      isOverTrashRef.current = isOverTrash;
       setIsOverTrashState(isOverTrash);
       onDragOverTrashChange?.(isOverTrash);
 
-      const currentVisualLeft = e.clientX - current.grabOffsetX;
-      const currentVisualTop = e.clientY - current.grabOffsetY;
-      const bookCenterX = currentVisualLeft + current.slotWidth / 2;
-      const bookCenterY = currentVisualTop + current.slotHeight / 2;
+      // Direct DOM transform: buttery pointer follow without per-frame React renders
+      const el = dragOverlayRef.current;
+      if (el) {
+        el.style.transform = `translate3d(${e.clientX - current.grabOffsetX}px, ${
+          e.clientY - current.grabOffsetY
+        }px, 0)`;
+      }
 
+      // Target placement, snapped & deduped so the shelf only re-renders when the
+      // drop target actually changes instead of on every pointer frame.
       const { targetRowIndex, targetX } = calculateTargetPlacement(
-        bookCenterX,
-        bookCenterY,
-        currentVisualLeft
+        0,
+        e.clientY - current.grabOffsetY + current.slotHeight / 2,
+        e.clientX - current.grabOffsetX
       );
-
-      setActiveDrag((prev) =>
-        prev && prev.status === "dragging"
-          ? {
-              ...prev,
-              pointerX: e.clientX,
-              pointerY: e.clientY,
-              targetRowIndex,
-              targetX,
-            }
-          : prev
-      );
+      const snappedX = Math.round(targetX / 4) * 4;
+      const last = lastDragTargetRef.current;
+      if (
+        !last ||
+        last.rowIndex !== targetRowIndex ||
+        Math.abs(last.x - snappedX) >= 4
+      ) {
+        lastDragTargetRef.current = { rowIndex: targetRowIndex, x: snappedX };
+        setActiveDrag((prev) =>
+          prev && prev.status === "dragging"
+            ? { ...prev, targetRowIndex, targetX: snappedX }
+            : prev
+        );
+      }
     };
 
     const handlePointerUp = () => {
       const current = activeDragRef.current;
       if (!current || current.status !== "dragging") return;
+      const { x: clientX, y: clientY } = livePointerRef.current;
 
       setIsOverTrashState(false);
+      isOverTrashRef.current = false;
       onDragOverTrashChange?.(false);
 
       // Check if dropped inside Trash Bin Widget
@@ -282,31 +299,31 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       if (trashEl) {
         const rect = trashEl.getBoundingClientRect();
         droppedInTrash =
-          current.pointerX >= rect.left - 24 &&
-          current.pointerX <= rect.right + 24 &&
-          current.pointerY >= rect.top - 24 &&
-          current.pointerY <= rect.bottom + 24;
+          clientX >= rect.left - 24 &&
+          clientX <= rect.right + 24 &&
+          clientY >= rect.top - 24 &&
+          clientY <= rect.bottom + 24;
       }
 
       if (droppedInTrash) {
-        let trashX = current.pointerX - current.grabOffsetX;
-        let trashY = current.pointerY - current.grabOffsetY;
+        let trashX = clientX - current.grabOffsetX;
+        let trashY = clientY - current.grabOffsetY;
         if (trashEl) {
           const rect = trashEl.getBoundingClientRect();
           trashX = rect.left + rect.width / 2 - current.slotWidth / 2;
           trashY = rect.top + 36;
         }
 
-        // Animate book scaling down and dropping straight down into trash cavity
-        setActiveDrag((prev) =>
-          prev
-            ? {
-                ...prev,
-                status: "dropping_to_trash",
-                settleTarget: { x: trashX, y: trashY },
-              }
-            : null
-        );
+        // Animate book scaling down and dropping into the trash cavity:
+        // outer layer glides to the bin, inner layer shrinks & fades via CSS class
+        setActiveDrag({ ...current, status: "dropping_to_trash" });
+        const el = dragOverlayRef.current;
+        if (el) {
+          el.style.transition = `transform 380ms cubic-bezier(0.4, 0, 0.2, 1)`;
+          requestAnimationFrame(() => {
+            el.style.transform = `translate3d(${trashX}px, ${trashY}px, 0)`;
+          });
+        }
 
         setTimeout(() => {
           onMoveToTrash?.(current.book.id);
@@ -316,8 +333,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       }
 
       // Find viewport coordinates of the target drop position on the shelf
-      let settleX = current.pointerX - current.grabOffsetX;
-      let settleY = current.pointerY - current.grabOffsetY;
+      let settleX = clientX - current.grabOffsetX;
+      let settleY = clientY - current.grabOffsetY;
 
       if (containerRef.current) {
         const targetRowEl = containerRef.current.querySelector<HTMLElement>(
@@ -330,18 +347,17 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         }
       }
 
-      // 1. Enter settling state: smoothly animates floating 3D book into the target rect
-      setActiveDrag((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "settling",
-              settleTarget: { x: settleX, y: settleY },
-            }
-          : null
-      );
+      // Settle: glide to the slot via compositor-friendly transform transition
+      setActiveDrag({ ...current, status: "settling" });
+      const el = dragOverlayRef.current;
+      if (el) {
+        el.style.transition = `transform ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
+        requestAnimationFrame(() => {
+          el.style.transform = `translate3d(${settleX}px, ${settleY}px, 0)`;
+        });
+      }
 
-      // 2. Commit placement to state
+      // Commit placement to state
       const nextPlacements: Record<string, BookPlacement> = {
         ...placements,
         [current.book.id]: {
@@ -353,7 +369,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       setPlacements(nextPlacements);
       onPlacementsChange?.(nextPlacements);
 
-      // 3. Complete settling animation, sort books by position, and clear overlay
+      // Complete settling animation, sort books by position, and clear overlay
       setTimeout(() => {
         const sorted = [...books].sort((a, b) => {
           const pa = nextPlacements[a.id] || { rowIndex: 0, x: 0 };
@@ -378,6 +394,21 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     };
   }, [activeDrag, books, placements, onReorderBooks, calculateTargetPlacement]);
 
+  // Paint the overlay at the live pointer position immediately on mount/status change
+  useLayoutEffect(() => {
+    const el = dragOverlayRef.current;
+    const current = activeDrag;
+    if (!el || !current) return;
+
+    if (current.status === "dragging") {
+      el.style.transition = "none";
+      el.style.opacity = "1";
+      el.style.transform = `translate3d(${livePointerRef.current.x - current.grabOffsetX}px, ${
+        livePointerRef.current.y - current.grabOffsetY
+      }px, 0)`;
+    }
+  }, [activeDrag]);
+
   // Press-and-Hold Start Handler (fires after 280ms threshold)
   const handleHoldStart = (
     book: IBook,
@@ -394,13 +425,14 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     const grabOffsetY = clientY - bookRect.top;
     const placement = placements[book.id] || { rowIndex: 0, x: 0 };
 
+    livePointerRef.current = { x: clientX, y: clientY };
+    lastDragTargetRef.current = { rowIndex: placement.rowIndex, x: placement.x };
+
     setActiveDrag({
       book,
       sourceIndex,
       targetRowIndex: placement.rowIndex,
       targetX: placement.x,
-      pointerX: clientX,
-      pointerY: clientY,
       grabOffsetX,
       grabOffsetY,
       slotWidth: bookRect.width,
@@ -504,9 +536,11 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     onBookClick(book);
   };
 
-  // Real-time drag preview target for live shelf space opening and dashed guide box
+  // Real-time drag preview target for live shelf space opening and dashed guide box.
+  // Kept active through settling/dropping too, so the reserved gap stays open until
+  // the reorder commit lands and the book materializes cleanly between its neighbors.
   const dragPreview = useMemo(() => {
-    if (!activeDrag || activeDrag.status !== "dragging") return null;
+    if (!activeDrag) return null;
     return {
       bookId: activeDrag.book.id,
       targetRowIndex: activeDrag.targetRowIndex,
@@ -563,6 +597,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
               books={row.books}
               startIndex={row.startIndex}
               rowIndex={row.rowIndex}
+              highlightedBookIds={highlightedBookIds}
               activeBookId={activeShelfBookId}
               activeSide={activeSide}
               returningBookId={returningBookId}
@@ -583,7 +618,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         })}
       </div>
 
-      {/* Dedicated Top-Level Drag Overlay Portaled directly to document.body */}
+      {/* Dedicated Top-Level Drag Overlay Portaled directly to document.body.
+          Position is written imperatively via dragOverlayRef for smoothness. */}
       {activeDrag &&
         createPortal(
           <div
@@ -599,53 +635,39 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
             aria-hidden="true"
           >
             <div
+              ref={dragOverlayRef}
               style={{
                 position: "absolute",
-                left:
-                  (activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash") &&
-                  activeDrag.settleTarget
-                    ? activeDrag.settleTarget.x
-                    : activeDrag.pointerX - activeDrag.grabOffsetX,
-                top:
-                  (activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash") &&
-                  activeDrag.settleTarget
-                    ? activeDrag.settleTarget.y
-                    : activeDrag.pointerY - activeDrag.grabOffsetY,
+                top: 0,
+                left: 0,
                 width: activeDrag.slotWidth,
                 height: activeDrag.slotHeight,
                 transformStyle: "preserve-3d",
-                transform:
-                  activeDrag.status === "dropping_to_trash"
-                    ? "scale(0.10) rotate(18deg) translateY(40px)"
-                    : isOverTrashState
-                    ? "scale(0.38) rotate(8deg)"
-                    : undefined,
-                opacity: activeDrag.status === "dropping_to_trash" ? 0 : 1,
-                transition:
-                  activeDrag.status === "dropping_to_trash"
-                    ? "all 380ms cubic-bezier(0.4, 0, 0.2, 1)"
-                    : isOverTrashState
-                    ? "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)"
-                    : activeDrag.status === "settling"
-                    ? `left ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), top ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), filter ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
-                    : "none",
-                filter:
-                  activeDrag.status === "settling"
-                    ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22))"
-                    : activeDrag.status === "dropping_to_trash"
-                    ? "none"
-                    : isOverTrashState
-                    ? "drop-shadow(0 8px 16px rgba(229, 77, 66, 0.6))"
-                    : "drop-shadow(0 22px 30px rgba(0, 0, 0, 0.5)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26))",
+                willChange: "transform",
               }}
             >
-              <DraggedBook
-                book={activeDrag.book}
-                mode="shelf"
-                isInteractive={false}
-                isLifted={activeDrag.status === "dragging"}
-                isSettling={activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash"}
-              />
+              {/* Inner presentation layer: lift-in, trash hover shrink and landing
+                  squash live here so the outer layer stays a pure pointer follower.
+                  DraggedBook is rendered without lifted/settling flags on purpose:
+                  no spine-to-cover flipping during reorder. */}
+              <div
+                className={[
+                  styles.dragInner,
+                  activeDrag.status === "dragging"
+                    ? `${styles.dragInnerActive} ${isOverTrashState ? styles.dragInnerShrunk : ""}`
+                    : activeDrag.status === "settling"
+                    ? styles.dragInnerLand
+                    : styles.dragInnerTrashDrop,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <DraggedBook
+                  book={activeDrag.book}
+                  mode="shelf"
+                  isInteractive={false}
+                />
+              </div>
             </div>
           </div>,
           document.body
