@@ -1,0 +1,121 @@
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.headerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans, system-ui);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #222);
+}
+
+.bookList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.bookItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-surface-elevated, #ffffff);
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-md, 8px);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bookItem:hover {
+  border-color: var(--border-strong, rgba(0, 0, 0, 0.2));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.bookInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bookCoverPreview {
+  width: 32px;
+  height: 44px;
+  border-radius: 3px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.textGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bookTitle {
+  font-family: var(--font-sans, system-ui);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #222);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bookMeta {
+  font-family: var(--font-sans, system-ui);
+  font-size: 11px;
+  color: var(--text-muted, #777);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.itemActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--text-muted, #888);
+  gap: 8px;
+}
+
+.emptyIcon {
+  opacity: 0.4;
+}
+
+.emptyText {
+  font-family: var(--font-sans, system-ui);
+  font-size: 13px;
+  font-weight: 500;
+}

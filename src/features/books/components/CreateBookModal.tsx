@@ -10,16 +10,22 @@ import {
   Palette,
   Pipette,
   Wand2,
+  FileText,
+  FileUp,
 } from "lucide-react";
 import styles from "./CreateBookModal.module.css";
 import {
   Book,
+  BookFormat,
+  PDFSourceMetadata,
   BookTypography,
   PageSizePreset,
   PAGE_SIZE_PRESETS,
   getDimensionsFromPreset,
   getBookDimensions,
+  calculateThicknessFromPages,
 } from "../types/book";
+import { processPDFFile } from "../services/pdfService";
 import { Book as BookPreview } from "./Book";
 import { Modal } from "../../../components/ui/Modal";
 import { Button } from "../../../components/ui/Button";
@@ -49,6 +55,11 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   initialBook = null,
 }) => {
   const isEditing = Boolean(initialBook);
+
+  // Book Format & PDF State
+  const [bookFormat, setBookFormat] = useState<BookFormat>("note");
+  const [pdfMetadata, setPdfMetadata] = useState<PDFSourceMetadata | undefined>(undefined);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // Book Details
   const [title, setTitle] = useState("My New Book");
@@ -109,6 +120,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
   // Populate state when initialBook changes or modal opens
   useEffect(() => {
     if (initialBook) {
+      setBookFormat(initialBook.format || "note");
+      setPdfMetadata(initialBook.pdfMetadata);
       setTitle(initialBook.title || "");
       setSubtitle(initialBook.subtitle || "");
       setAuthorName(initialBook.cover.authorName || "");
@@ -131,6 +144,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
       setPageMargin(initialBook.pageSettings.pageMargin || "normal");
       setShowPageNumbers(initialBook.pageSettings.showPageNumbers ?? true);
     } else {
+      setBookFormat("note");
+      setPdfMetadata(undefined);
       setTitle("My New Book");
       setSubtitle("");
       setAuthorName("Author");
@@ -153,6 +168,35 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
     setPreviewRotX(4);
     setUploadError(null);
   }, [initialBook, isOpen]);
+
+  // Handle PDF Upload File
+  const handlePDFFileUpload = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      setUploadError("Silakan pilih file berformat PDF (.pdf) yang valid.");
+      return;
+    }
+    setUploadError(null);
+    setIsUploading(true);
+    try {
+      const { metadata } = await processPDFFile(file);
+      setPdfMetadata(metadata);
+      setBookFormat("pdf");
+      const cleanTitle = metadata.fileName.replace(/\.pdf$/i, "");
+      setTitle(cleanTitle);
+
+      if (metadata.coverPageThumbnail) {
+        setCustomImageUrl(metadata.coverPageThumbnail);
+        setCoverType("custom");
+        setTitleVisible(true);
+      }
+      setThickness(calculateThicknessFromPages(metadata.totalPages));
+    } catch (err) {
+      console.error("PDF upload error:", err);
+      setUploadError("Gagal memproses file PDF. Pastikan file tidak rusak.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Extract color palette dynamically whenever customImageUrl is set or updated
   useEffect(() => {
@@ -325,6 +369,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
         ...initialBook,
         title: title.trim(),
         subtitle: subtitle.trim() || undefined,
+        format: bookFormat,
+        pdfMetadata,
         cover: finalCover,
         dimensions: derivedDimensions,
         pageSettings: {
@@ -342,6 +388,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
         id: `book-${Date.now()}`,
         title: title.trim(),
         subtitle: subtitle.trim() || undefined,
+        format: bookFormat,
+        pdfMetadata,
         cover: finalCover,
         dimensions: derivedDimensions,
         typography: {
@@ -461,6 +509,100 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({
 
           {/* Right: Customization Controls */}
           <div className={styles.controlsColumn}>
+            {/* Format Selection (Note vs PDF) */}
+            {!isEditing && (
+              <div className={styles.section}>
+                <label className={styles.sectionLabel}>Format Buku</label>
+                <div className={styles.coverTypeSegment}>
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${bookFormat === "note" ? styles.segmentBtnActive : ""}`}
+                    onClick={() => setBookFormat("note")}
+                  >
+                    <BookOpen size={14} />
+                    <span>Catatan Tulis (Editable)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.segmentBtn} ${bookFormat === "pdf" ? styles.segmentBtnActive : ""}`}
+                    onClick={() => setBookFormat("pdf")}
+                  >
+                    <FileText size={14} />
+                    <span>E-Book PDF (Read-Only)</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* PDF Upload Option */}
+            {bookFormat === "pdf" && !isEditing && (
+              <div className={styles.section}>
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePDFFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+
+                {!pdfMetadata ? (
+                  <div
+                    className={styles.dropzone}
+                    onClick={() => pdfInputRef.current?.click()}
+                  >
+                    <FileUp size={24} className={styles.dropzoneIcon} />
+                    <div className={styles.dropzoneTitle}>
+                      {isUploading ? "Memproses File PDF..." : "Import File E-Book PDF"}
+                    </div>
+                    <div className={styles.dropzoneSub}>
+                      Klik untuk memilih file .pdf dari komputer Anda
+                    </div>
+                    <Button size="sm" variant="secondary" type="button" disabled={isUploading}>
+                      Pilih File PDF
+                    </Button>
+                  </div>
+                ) : (
+                  <div className={styles.imageCard}>
+                    <div
+                      className={styles.imageThumbnail}
+                      style={{
+                        backgroundImage: pdfMetadata.coverPageThumbnail
+                          ? `url("${pdfMetadata.coverPageThumbnail}")`
+                          : undefined,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: pdfMetadata.coverPageThumbnail ? undefined : "var(--bg-canvas-subtle)",
+                      }}
+                    >
+                      {!pdfMetadata.coverPageThumbnail && <FileText size={20} />}
+                    </div>
+                    <div className={styles.imageMeta}>
+                      <div className={styles.imageTitle}>{pdfMetadata.fileName}</div>
+                      <div className={styles.dropzoneSub}>
+                        {pdfMetadata.totalPages} Halaman • {Math.round((pdfMetadata.fileSize || 0) / 1024)} KB
+                      </div>
+                      <div className={styles.imageActions}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          type="button"
+                          onClick={() => pdfInputRef.current?.click()}
+                          icon={<RefreshCw size={12} />}
+                        >
+                          Ganti PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Primary Details */}
             <div className={styles.primaryFields}>
               <Input

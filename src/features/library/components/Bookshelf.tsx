@@ -25,6 +25,9 @@ export interface BookshelfProps {
   onAddNewClick: () => void;
   onEditBook?: (book: IBook) => void;
   onReorderBooks?: (newBooks: IBook[]) => void;
+  onMoveToTrash?: (bookId: string) => void;
+  isDragOverTrash?: boolean;
+  onDragOverTrashChange?: (isOver: boolean) => void;
 }
 
 interface ActiveDrag {
@@ -38,7 +41,7 @@ interface ActiveDrag {
   grabOffsetY: number; // Offset from top edge of book slot to clientY
   slotWidth: number; // Exact thickness of book
   slotHeight: number; // Exact height of row/book
-  status: "dragging" | "settling";
+  status: "dragging" | "settling" | "dropping_to_trash";
   settleTarget?: { x: number; y: number };
 }
 
@@ -50,6 +53,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   onAddNewClick: _onAddNewClick,
   onEditBook,
   onReorderBooks,
+  onMoveToTrash,
+  onDragOverTrashChange,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(1000);
@@ -79,6 +84,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
 
   // Unified Pointer Drag & Reorder State
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
+  const [isOverTrashState, setIsOverTrashState] = useState<boolean>(false);
   const activeDragRef = useRef<ActiveDrag | null>(null);
   activeDragRef.current = activeDrag;
 
@@ -225,6 +231,20 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       const current = activeDragRef.current;
       if (!current || current.status !== "dragging") return;
 
+      // Check collision with Trash Bin Widget at bottom-right
+      const trashEl = document.querySelector<HTMLElement>('[data-trash-bin="true"]');
+      let isOverTrash = false;
+      if (trashEl) {
+        const rect = trashEl.getBoundingClientRect();
+        isOverTrash =
+          e.clientX >= rect.left - 24 &&
+          e.clientX <= rect.right + 24 &&
+          e.clientY >= rect.top - 24 &&
+          e.clientY <= rect.bottom + 24;
+      }
+      setIsOverTrashState(isOverTrash);
+      onDragOverTrashChange?.(isOverTrash);
+
       const currentVisualLeft = e.clientX - current.grabOffsetX;
       const currentVisualTop = e.clientY - current.grabOffsetY;
       const bookCenterX = currentVisualLeft + current.slotWidth / 2;
@@ -252,6 +272,48 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     const handlePointerUp = () => {
       const current = activeDragRef.current;
       if (!current || current.status !== "dragging") return;
+
+      setIsOverTrashState(false);
+      onDragOverTrashChange?.(false);
+
+      // Check if dropped inside Trash Bin Widget
+      const trashEl = document.querySelector<HTMLElement>('[data-trash-bin="true"]');
+      let droppedInTrash = false;
+      if (trashEl) {
+        const rect = trashEl.getBoundingClientRect();
+        droppedInTrash =
+          current.pointerX >= rect.left - 24 &&
+          current.pointerX <= rect.right + 24 &&
+          current.pointerY >= rect.top - 24 &&
+          current.pointerY <= rect.bottom + 24;
+      }
+
+      if (droppedInTrash) {
+        let trashX = current.pointerX - current.grabOffsetX;
+        let trashY = current.pointerY - current.grabOffsetY;
+        if (trashEl) {
+          const rect = trashEl.getBoundingClientRect();
+          trashX = rect.left + rect.width / 2 - current.slotWidth / 2;
+          trashY = rect.top + 36;
+        }
+
+        // Animate book scaling down and dropping straight down into trash cavity
+        setActiveDrag((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "dropping_to_trash",
+                settleTarget: { x: trashX, y: trashY },
+              }
+            : null
+        );
+
+        setTimeout(() => {
+          onMoveToTrash?.(current.book.id);
+          setActiveDrag(null);
+        }, 380);
+        return;
+      }
 
       // Find viewport coordinates of the target drop position on the shelf
       let settleX = current.pointerX - current.grabOffsetX;
@@ -540,23 +602,40 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
               style={{
                 position: "absolute",
                 left:
-                  activeDrag.status === "settling" && activeDrag.settleTarget
+                  (activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash") &&
+                  activeDrag.settleTarget
                     ? activeDrag.settleTarget.x
                     : activeDrag.pointerX - activeDrag.grabOffsetX,
                 top:
-                  activeDrag.status === "settling" && activeDrag.settleTarget
+                  (activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash") &&
+                  activeDrag.settleTarget
                     ? activeDrag.settleTarget.y
                     : activeDrag.pointerY - activeDrag.grabOffsetY,
                 width: activeDrag.slotWidth,
                 height: activeDrag.slotHeight,
                 transformStyle: "preserve-3d",
+                transform:
+                  activeDrag.status === "dropping_to_trash"
+                    ? "scale(0.10) rotate(18deg) translateY(40px)"
+                    : isOverTrashState
+                    ? "scale(0.38) rotate(8deg)"
+                    : undefined,
+                opacity: activeDrag.status === "dropping_to_trash" ? 0 : 1,
                 transition:
-                  activeDrag.status === "settling"
+                  activeDrag.status === "dropping_to_trash"
+                    ? "all 380ms cubic-bezier(0.4, 0, 0.2, 1)"
+                    : isOverTrashState
+                    ? "transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                    : activeDrag.status === "settling"
                     ? `left ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), top ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1), filter ${BOOKSHELF_SETTLE_DURATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
                     : "none",
                 filter:
                   activeDrag.status === "settling"
                     ? "drop-shadow(0 4px 6px rgba(0, 0, 0, 0.22))"
+                    : activeDrag.status === "dropping_to_trash"
+                    ? "none"
+                    : isOverTrashState
+                    ? "drop-shadow(0 8px 16px rgba(229, 77, 66, 0.6))"
                     : "drop-shadow(0 22px 30px rgba(0, 0, 0, 0.5)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.26))",
               }}
             >
@@ -565,7 +644,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
                 mode="shelf"
                 isInteractive={false}
                 isLifted={activeDrag.status === "dragging"}
-                isSettling={activeDrag.status === "settling"}
+                isSettling={activeDrag.status === "settling" || activeDrag.status === "dropping_to_trash"}
               />
             </div>
           </div>,

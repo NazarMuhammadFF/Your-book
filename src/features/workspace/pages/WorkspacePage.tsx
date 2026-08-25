@@ -5,6 +5,7 @@ import { Book, BookTypography } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
 import { WorkspaceHeader } from "../components/WorkspaceHeader";
 import { DocumentView } from "../components/DocumentView";
+import { PDFDocumentViewer } from "../../reader/components/PDFDocumentViewer";
 import { BookViewPlaceholder } from "../components/BookViewPlaceholder";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { transitions } from "../../../design/motion";
@@ -81,12 +82,16 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               exit={{ opacity: 0, y: -8 }}
               transition={transitions.fast}
             >
-              <DocumentView
-                book={book}
-                content={documentContent}
-                onUpdateContent={handleUpdateContent}
-                onUpdateTypography={handleUpdateTypography}
-              />
+              {book.format === "pdf" ? (
+                <PDFDocumentViewer book={book} />
+              ) : (
+                <DocumentView
+                  book={book}
+                  content={documentContent}
+                  onUpdateContent={handleUpdateContent}
+                  onUpdateTypography={handleUpdateTypography}
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div

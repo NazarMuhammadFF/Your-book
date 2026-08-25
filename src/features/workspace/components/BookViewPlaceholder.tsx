@@ -4,6 +4,7 @@ import { Book } from "../../books/types/book";
 import { JSONContent } from "@tiptap/react";
 import { resolveCoverPalette } from "../../../design/typography";
 import { BookFlipView } from "../../reader/components/BookFlipView";
+import { PDFBookFlipViewer } from "../../reader/components/PDFBookFlipViewer";
 
 export interface BookViewPlaceholderProps {
   book: Book;
@@ -25,12 +26,21 @@ export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
       className={styles.container}
       style={{ "--reader-cover-trim": palette.primary } as React.CSSProperties}
     >
-      <BookFlipView
-        book={book}
-        content={content}
-        pageIndex={pageIndex}
-        onPageIndexChange={onPageIndexChange}
-      />
+      {book.format === "pdf" ? (
+        <PDFBookFlipViewer
+          book={book}
+          pageIndex={pageIndex}
+          onPageIndexChange={onPageIndexChange}
+        />
+      ) : (
+        <BookFlipView
+          book={book}
+          content={content}
+          pageIndex={pageIndex}
+          onPageIndexChange={onPageIndexChange}
+        />
+      )}
     </div>
   );
 };
+

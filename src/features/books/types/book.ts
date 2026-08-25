@@ -77,10 +77,22 @@ export interface BookVisualDimensions {
   rotationDeg: number; // natural shelf angle e.g. -1.2 to 1.5
 }
 
+export type BookFormat = "note" | "pdf";
+
+export interface PDFSourceMetadata {
+  filePath?: string;
+  fileName: string;
+  fileSize?: number;
+  totalPages: number;
+  coverPageThumbnail?: string;
+}
+
 export interface Book {
   id: string;
   title: string;
   subtitle?: string;
+  format?: BookFormat;
+  pdfMetadata?: PDFSourceMetadata;
   cover: BookCover;
   typography: BookTypography;
   pageSettings: BookPageSettings;
@@ -88,6 +100,7 @@ export interface Book {
   content?: JSONContent;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
 }
 
 /**
