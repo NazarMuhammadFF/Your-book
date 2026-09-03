@@ -22,6 +22,7 @@ export interface ShelfRowProps {
   onSideChange: (side: "front" | "back") => void;
   onReturnToShelf: () => void;
   onHoldStart?: (book: IBook, clientX: number, clientY: number, bookRect: DOMRect) => void;
+  justDroppedBookId?: string | null;
   isEmptyContinuation?: boolean;
   maxRowHeight: number;
   containerWidth: number;
@@ -45,6 +46,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
   onSideChange,
   onReturnToShelf,
   onHoldStart,
+  justDroppedBookId,
   isEmptyContinuation = false,
   maxRowHeight,
   containerWidth,
@@ -74,7 +76,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
       <div
         className={`${styles.booksRow} ${isEmptyContinuation ? styles.emptyBooksRow : ""}`}
         style={{
-          height: isEmptyContinuation ? "90px" : `${maxRowHeight + 8}px`,
+          height: `${maxRowHeight + 8}px`,
         }}
       >
         {/* Real-time Dashed Placement Guide Box when dragged book targets this shelf */}
@@ -88,7 +90,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
             }}
           />
         )}
-        {slotItems.map((slotItem) => {
+        {slotItems.map((slotItem, slotIndex) => {
           const { book, globalIndex, thickness, x, leanAngle } = slotItem;
           const isActive = activeBookId === book.id;
           const isReturning = returningBookId === book.id;
@@ -102,6 +104,25 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
               : styles.liftedSlot
             : "";
 
+          // Dynamic z-index and 3D depth: Leaning books stack physically in front of their resting neighbors
+          const slotZIndex =
+            isActive || isReturning
+              ? 100
+              : leanAngle > 0
+              ? 10 + (slotItems.length - slotIndex)
+              : leanAngle < 0
+              ? 10 + slotIndex
+              : 5;
+
+          const leanStackZ =
+            isActive || isReturning
+              ? 0
+              : leanAngle > 0
+              ? (slotItems.length - slotIndex) * 3
+              : leanAngle < 0
+              ? slotIndex * 3
+              : 0;
+
           return (
             <div
               key={book.id}
@@ -110,7 +131,7 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
                 left: `${currentSlotLeft}px`,
                 width: `${thickness}px`,
                 height: `${maxRowHeight}px`,
-                zIndex: isActive || isReturning ? 100 : 1,
+                zIndex: slotZIndex,
               }}
               data-book-id={book.id}
               data-book-index={globalIndex}
@@ -124,6 +145,8 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
                 activeSide={activeSide}
                 isReturning={isReturning}
                 leanAngle={leanAngle}
+                leanStackZ={leanStackZ}
+                wasJustDropped={justDroppedBookId === book.id}
                 onSelect={onSelectBook}
                 onOpenBook={onOpenBook}
                 onSideChange={onSideChange}

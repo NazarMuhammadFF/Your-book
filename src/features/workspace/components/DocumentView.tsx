@@ -13,6 +13,10 @@ import styles from "./DocumentView.module.css";
 export interface DocumentViewProps {
   book: Book;
   content: JSONContent;
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
   onUpdateContent: (content: JSONContent) => void;
   onUpdateTypography: (newTypography: BookTypography) => void;
 }
@@ -20,6 +24,10 @@ export interface DocumentViewProps {
 export const DocumentView: React.FC<DocumentViewProps> = ({
   book,
   content,
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
   onUpdateContent,
   onUpdateTypography,
 }) => {
@@ -81,17 +89,17 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
       className={`${styles.container} ${layoutMode === "spread" ? styles.spreadContainer : ""}`}
       style={
         {
-          "--page-width": `${pageMetrics.pageWidth}px`,
-          "--page-height": `${pageMetrics.pageHeight}px`,
-          "--page-pad-top": `${margins.top}px`,
-          "--page-pad-bottom": `${margins.bottom}px`,
-          "--page-pad-left": `${margins.left}px`,
-          "--page-pad-right": `${margins.right}px`,
-          "--page-pad-x": `${(margins.left + margins.right) / 2}px`,
+          "--page-width": `${pageMetrics.pageWidth * zoom}px`,
+          "--page-height": `${pageMetrics.pageHeight * zoom}px`,
+          "--page-pad-top": `${margins.top * zoom}px`,
+          "--page-pad-bottom": `${margins.bottom * zoom}px`,
+          "--page-pad-left": `${margins.left * zoom}px`,
+          "--page-pad-right": `${margins.right * zoom}px`,
+          "--page-pad-x": `${((margins.left + margins.right) / 2) * zoom}px`,
           "--doc-font-family": fontConfig.fontFamily,
-          "--doc-font-size": `${typography.fontSize || 15.5}px`,
+          "--doc-font-size": `${(typography.fontSize || 15.5) * zoom}px`,
           "--doc-line-height": `${typography.lineHeight || 1.60}`,
-          "--doc-p-spacing": `${typography.paragraphSpacing || 12}px`,
+          "--doc-p-spacing": `${(typography.paragraphSpacing || 12) * zoom}px`,
           "--doc-text-align": typography.textAlignment || "left",
         } as React.CSSProperties
       }
@@ -102,6 +110,10 @@ export const DocumentView: React.FC<DocumentViewProps> = ({
           editor={editor}
           book={book}
           layoutMode={layoutMode}
+          zoom={zoom}
+          onZoomIn={onZoomIn}
+          onZoomOut={onZoomOut}
+          onZoomReset={onZoomReset}
           onToggleLayoutMode={() =>
             setLayoutMode((m) => (m === "vertical" ? "spread" : "vertical"))
           }

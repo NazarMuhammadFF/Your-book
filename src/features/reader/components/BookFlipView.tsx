@@ -1,5 +1,5 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import HTMLFlipBook, { FlipBookRef } from "react-pageflip";
 import { Button } from "../../../components/ui/Button";
 import { Book, getBookPageMetrics } from "../../books/types/book";
@@ -13,7 +13,11 @@ export interface BookFlipViewProps {
   book: Book;
   content: JSONContent;
   pageIndex: number;
+  zoom: number;
   onPageIndexChange: (pageIndex: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
 }
 
 interface PageSlotProps {
@@ -41,7 +45,11 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
   book,
   content,
   pageIndex,
+  zoom,
   onPageIndexChange,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }) => {
   const flipBookRef = useRef<FlipBookRef>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,15 +94,16 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
           availableHeight > 0 && targetSpreadHeight > 0
             ? availableHeight / targetSpreadHeight
             : 1;
-        const nextScale = Math.min(1, Math.max(0.35, Math.min(scaleX, scaleY)));
-        setScale(nextScale);
+        const autoScale = Math.min(1, Math.max(0.35, Math.min(scaleX, scaleY)));
+        const finalScale = autoScale * zoom; // Multiply with manual zoom
+        setScale(finalScale);
       }
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [targetSpreadWidth, targetSpreadHeight]);
+  }, [targetSpreadWidth, targetSpreadHeight, zoom]);
 
   const handleFlip = (e: { data: number }) => {
     setCurrentPage(e.data);
@@ -157,8 +166,8 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
           style={{
             width: `${targetSpreadWidth}px`,
             height: `${targetSpreadHeight}px`,
-            transform: scale < 1 ? `scale(${scale})` : undefined,
-            transformOrigin: "top left",
+            transform: `scale(${scale})`,
+            transformOrigin: "center center",
           }}
         >
           <HTMLFlipBook
@@ -174,7 +183,9 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
             flippingTime={600}
             usePortrait={false}
             startPage={currentPage}
-            isMouseMoveEvent={true}
+            clickEventForward={false}
+            useMouseEvents={true}
+            swipeDistance={30}
             showCover={false}
             mobileScrollSupport={true}
             onFlip={handleFlip}
@@ -206,6 +217,39 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
         >
           Previous
         </Button>
+
+        {/* Zoom Controls */}
+        <div className={styles.zoomGroup}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<ZoomOut size={14} />}
+            onClick={onZoomOut}
+            disabled={zoom <= 0.6}
+            title="Zoom Out (Ctrl + -)"
+            aria-label="Zoom Out"
+          />
+          <span className={styles.zoomLevel}>{Math.round(zoom * 100)}%</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<ZoomIn size={14} />}
+            onClick={onZoomIn}
+            disabled={zoom >= 2.5}
+            title="Zoom In (Ctrl + +)"
+            aria-label="Zoom In"
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<RotateCcw size={14} />}
+            onClick={onZoomReset}
+            disabled={zoom === 1.0}
+            title="Reset Zoom (Ctrl + 0)"
+            aria-label="Reset Zoom"
+          />
+        </div>
+
         <span className={styles.status} aria-live="polite">
           {getStatusText()}
         </span>
@@ -221,7 +265,7 @@ export const BookFlipView: React.FC<BookFlipViewProps> = ({
       </div>
 
       <p className={styles.hint}>
-        Hover or drag page corners, click Next/Previous, or use Arrow keys to flip
+        Click or drag anywhere on pages to flip, use Next/Previous buttons, or Arrow keys
       </p>
     </section>
   );

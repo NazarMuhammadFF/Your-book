@@ -21,11 +21,13 @@ export interface BookProps {
   activeSide?: "front" | "back";
   isReturning?: boolean;
   leanAngle?: number;
+  leanStackZ?: number;
   onSelect?: (book: IBook) => void;
   onOpenBook?: (book: IBook) => void;
   onSideChange?: (side: "front" | "back") => void;
   onReturnToShelf?: () => void;
   onHoldStart?: (book: IBook, clientX: number, clientY: number, bookRect: DOMRect) => void;
+  wasJustDropped?: boolean;
   slotLeft?: number;
   containerWidth?: number;
   previewRotationY?: number;
@@ -45,9 +47,11 @@ export const Book: React.FC<BookProps> = ({
   activeSide = "front",
   isReturning = false,
   leanAngle = 0,
+  leanStackZ = 0,
   onSelect,
   onOpenBook,
   onSideChange,
+  wasJustDropped = false,
   onReturnToShelf,
   onHoldStart,
   slotLeft = 0,
@@ -72,6 +76,74 @@ export const Book: React.FC<BookProps> = ({
   const [rotationX, setRotationX] = useState<number>(0);
   const [dragOffsetY, setDragOffsetY] = useState<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+
+  // Animated lean angle for smooth fall/lean transitions
+  // ponytail: wasJustDropped forces start at upright (0°) so useEffect animates
+  // from 0 → target instead of skipping (start === target → no animation).
+  const [animatedLeanAngle, setAnimatedLeanAngle] = useState<number>(() => wasJustDropped ? 0 : (leanAngle || 0));
+  const animatedLeanAngleRef = useRef<number>(wasJustDropped ? 0 : (leanAngle || 0));
+  const leanAnimationRef = useRef<number | null>(null);
+  const prevLeanAngleRef = useRef<number>(wasJustDropped ? 0 : (leanAngle || 0));
+  const hasAnimatedFallRef = useRef<boolean>(false);
+
+  // Animate lean angle changes (fall/lean transitions)
+  useEffect(() => {
+    const target = leanAngle || 0;
+    const start = animatedLeanAngleRef.current;
+    const prev = prevLeanAngleRef.current;
+
+    // Detect a NEW fall: target is ~90° (fallen) but previous was not fallen
+    const isFallen = Math.abs(target) >= 85;
+    const wasFallen = Math.abs(prev) >= 85;
+    const isNewFall = isFallen && !wasFallen && !hasAnimatedFallRef.current;
+
+    // Reset fall-animated flag when book stands upright/leans again after being fallen
+    if (!isFallen && wasFallen) {
+      hasAnimatedFallRef.current = false;
+    }
+
+    // Animate smoothly from current visual angle (or upright 0° if standing)
+    const effectiveStart = start;
+
+    // Skip only if already at target (within 0.5°) and not a new fall
+    if (!isNewFall && Math.abs(effectiveStart - target) < 0.5) {
+      prevLeanAngleRef.current = target;
+      return;
+    }
+
+    // Force full fall animation from 90° when transitioning from fallen to supported
+    const isFallenToSupported = wasFallen && !isFallen;
+    const animationStart = isFallenToSupported ? (prev >= 0 ? 90 : -90) : effectiveStart;
+
+    if (isFallenToSupported) hasAnimatedFallRef.current = false;
+
+    if (isNewFall) hasAnimatedFallRef.current = true;
+
+    const startTime = performance.now();
+    const DURATION = isNewFall ? 700 : isFallenToSupported ? 600 : 500;
+    const SPRING_DAMPING = isNewFall ? 0.75 : isFallenToSupported ? 0.7 : 0.85;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / DURATION, 1);
+      // Spring-like easing: overshoot slightly then settle
+      const eased = 1 - Math.pow(1 - progress, 3) * (1 - SPRING_DAMPING * progress);
+      const current = animationStart + (target - animationStart) * eased;
+      animatedLeanAngleRef.current = current;
+      setAnimatedLeanAngle(current);
+
+      if (progress < 1) {
+        leanAnimationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    leanAnimationRef.current = requestAnimationFrame(animate);
+    prevLeanAngleRef.current = target;
+
+    return () => {
+      if (leanAnimationRef.current) cancelAnimationFrame(leanAnimationRef.current);
+    };
+  }, [leanAngle]);
 
   const pointerStartRef = useRef<{
     x: number;
@@ -352,27 +424,48 @@ export const Book: React.FC<BookProps> = ({
     !isSettling &&
     !isGhost &&
     !isReturning &&
-    leanAngle !== 0;
+    animatedLeanAngle !== 0;
 
   // Collision-safe hard shelf plane constraint. The stowed mesh is centered into
   // its slot in CSS, so these left/right pivots are exact mirrors.
-  // - Right lean/fall (leanAngle > 0): pivots from bottom-left corner (0% 100%) with translateY(-thickness * sin(leanAngle)).
-  // - Left lean/fall (leanAngle < 0): pivots from bottom-right corner (100% 100%) with translateY(-thickness * sin(|leanAngle|)).
+  // - Right lean/fall (animatedLeanAngle > 0): pivots from bottom-left corner (0% 100%) with translateY(-thickness * sin(animatedLeanAngle)).
+  // - Left lean/fall (animatedLeanAngle < 0): pivots from bottom-right corner (100% 100%) with translateY(-thickness * sin(|animatedLeanAngle|)).
   // This guarantees that for BOTH directions, the lowest transformed point sits exactly on the shelf top baseline.
-  const absLeanRad = (Math.abs(leanAngle || 0) * Math.PI) / 180;
+  const absLeanRad = (Math.abs(animatedLeanAngle || 0) * Math.PI) / 180;
   const shelfCollisionOffsetY = isLeaning
     ? -Math.round(thickness * Math.sin(absLeanRad) * scale * 100) / 100
     : 0;
 
-  const containerTransform = isLeaning
-    ? `translateY(${shelfCollisionOffsetY}px) rotateZ(${leanAngle}deg)`
-    : undefined;
+  // Contact shadow on the horizontal shelf plane (always stays flat on the shelf, never rotates vertically)
+  let shadowLeft = -2;
+  let shadowWidth = thickness * scale + 4;
+  let shadowOpacity = 0.45;
 
-  const containerTransformOrigin = isLeaning
-    ? leanAngle > 0
+  if (isLeaning) {
+    const angle = animatedLeanAngle || 0;
+    const spanX = (thickness * Math.cos(absLeanRad) + height * Math.sin(absLeanRad)) * scale;
+    if (angle > 0) {
+      // Leaning / fallen right: spans horizontally from left pivot (x = 0) rightward
+      shadowLeft = -2;
+      shadowWidth = Math.round(spanX + 4);
+    } else {
+      // Leaning / fallen left: spans horizontally from right pivot (x = thickness) leftward
+      shadowLeft = Math.round((thickness * scale) - spanX - 2);
+      shadowWidth = Math.round(spanX + 4);
+    }
+    shadowOpacity = Math.round(Math.max(0.22, 0.45 - (Math.abs(angle) / 90) * 0.15) * 100) / 100;
+  }
+
+  const containerTransform = isLeaning
+    ? `translateY(${shelfCollisionOffsetY}px) translateZ(${leanStackZ}px) rotateZ(${animatedLeanAngle}deg)`
+    : "translateY(0px) translateZ(0px) rotateZ(0deg)";
+
+  const containerTransformOrigin =
+    (animatedLeanAngle || 0) > 0
       ? "0% 100%"
-      : "100% 100%"
-    : undefined;
+      : (animatedLeanAngle || 0) < 0
+      ? "100% 100%"
+      : "50% 100%";
 
   return (
     <div
@@ -403,8 +496,6 @@ export const Book: React.FC<BookProps> = ({
         {
           width: mode === "shelf" ? thickness * scale : width * scale,
           height: height * scale,
-          transform: containerTransform,
-          transformOrigin: containerTransformOrigin,
           "--cover-width": `${width * scale}px`,
           "--cover-height": `${height * scale}px`,
           "--book-thickness": `${thickness * scale}px`,
@@ -420,86 +511,104 @@ export const Book: React.FC<BookProps> = ({
           "--extract-duration": `${BOOKSHELF_EXTRACT_DURATION_MS}ms`,
           "--return-duration": `${BOOKSHELF_RETURN_DURATION_MS}ms`,
           "--settle-duration": `${BOOKSHELF_SETTLE_DURATION_MS}ms`,
+          "--lean-shadow-opacity": `${shadowOpacity}`,
+          "--lean-angle": `${animatedLeanAngle || 0}deg`,
         } as React.CSSProperties
       }
     >
-      {/* Contact shadow cast beneath book */}
-      {mode === "shelf" && !isLifted && !isGhost && <div className={styles.shelfShadow} />}
+      {/* Contact shadow cast beneath book horizontally on the shelf plane */}
+      {mode === "shelf" && !isLifted && !isGhost && (
+        <div
+          className={styles.shelfShadow}
+          style={{
+            left: `${shadowLeft}px`,
+            width: `${shadowWidth}px`,
+          }}
+        />
+      )}
 
-      {/* 3D Physical Book Body */}
+      {/* 3D Physical Book Body Mesh Wrapper (handles lean tilt & collision plane without rotating shadow) */}
       <div
-        className={`${styles.bookBody} ${stateClass}`}
+        className={styles.bookMeshWrapper}
         style={{
-          width: width * scale,
-          height: height * scale,
-          transform: transformStyle,
+          transform: containerTransform,
+          transformOrigin: containerTransformOrigin,
         }}
       >
-        {/* 1. Spine Surface (Left plane at X = 0, facing -X) */}
-        <div className={styles.spineFacet}>
-          <div className={styles.spineLighting} />
-          <div className={styles.spineHeadbandTop} />
-          <div className={styles.spineHeadbandBottom} />
+        <div
+          className={`${styles.bookBody} ${stateClass}`}
+          style={{
+            width: width * scale,
+            height: height * scale,
+            transform: transformStyle,
+          }}
+        >
+          {/* 1. Spine Surface (Left plane at X = 0, facing -X) */}
+          <div className={styles.spineFacet}>
+            <div className={styles.spineLighting} />
+            <div className={styles.spineHeadbandTop} />
+            <div className={styles.spineHeadbandBottom} />
 
-          {/* Embossed ribs along spine */}
-          <div className={`${styles.spineRib} ${styles.spineRibTop}`} />
-          <div className={`${styles.spineRib} ${styles.spineRibMid}`} />
-          <div className={`${styles.spineRib} ${styles.spineRibBottom}`} />
+            {/* Embossed ribs along spine */}
+            <div className={`${styles.spineRib} ${styles.spineRibTop}`} />
+            <div className={`${styles.spineRib} ${styles.spineRibMid}`} />
+            <div className={`${styles.spineRib} ${styles.spineRibBottom}`} />
 
-          {/* Spine Content */}
-          <div className={styles.spineContent}>
-            {book.cover.badgeText ? (
-              <span className={styles.spineBadge}>{book.cover.badgeText}</span>
-            ) : (
-              <div />
-            )}
+            {/* Spine Content */}
+            <div className={styles.spineContent}>
+              {book.cover.badgeText ? (
+                <span className={styles.spineBadge}>{book.cover.badgeText}</span>
+              ) : (
+                <div />
+              )}
 
-            <div className={styles.spineTitleSection}>
-              <span className={styles.spineTitle}>{book.title}</span>
+              <div className={styles.spineTitleSection}>
+                <span className={styles.spineTitle}>{book.title}</span>
+              </div>
+
+              {book.cover.authorName ? (
+                <span className={styles.spineAuthor}>{book.cover.authorName}</span>
+              ) : (
+                <div />
+              )}
             </div>
-
-            {book.cover.authorName ? (
-              <span className={styles.spineAuthor}>{book.cover.authorName}</span>
-            ) : (
-              <div />
-            )}
           </div>
+
+          {/* 2. Front Cover Board (3D Hardcover Slab Volume) */}
+          <div className={styles.frontCoverFace}>
+            <BookCover
+              cover={book.cover}
+              title={book.title}
+              subtitle={book.subtitle}
+            />
+          </div>
+          <div className={styles.frontInsideFace} />
+          <div className={styles.frontRightEdge} />
+          <div className={styles.frontTopEdge} />
+          <div className={styles.frontBottomEdge} />
+
+          {/* 3. Back Cover Board (3D Hardcover Slab Volume) */}
+          <div className={styles.backCoverFace}>
+            <BackCover book={book} />
+          </div>
+          <div className={styles.backInsideFace} />
+          <div className={styles.backRightEdge} />
+          <div className={styles.backTopEdge} />
+          <div className={styles.backBottomEdge} />
+
+          {/* 4. Fore-Edge (Right page block at X = coverWidth - pagesOffset, facing +X) */}
+          <div className={styles.foreEdgeFacet} />
+
+          {/* 5. Top Page Edge (Top page block at Y = pagesOffset, facing -Y) */}
+          <div className={styles.topEdgeFacet} />
+
+          {/* 6. Bottom Page Edge (Bottom page block at Y = height - pagesOffset, facing +Y) */}
+          <div className={styles.bottomEdgeFacet} />
+
+          {/* 7. Page Block Endpapers (Solid Paper Core preventing hollow views during rotation) */}
+          <div className={styles.frontEndpaper} />
+          <div className={styles.backEndpaper} />
         </div>
-
-        {/* 2. Front Cover Board (3D Hardcover Slab Volume) */}
-        <div className={styles.frontCoverFace}>
-          <BookCover
-            cover={book.cover}
-            title={book.title}
-            subtitle={book.subtitle}
-          />
-        </div>
-        <div className={styles.frontInsideFace} />
-        <div className={styles.frontRightEdge} />
-        <div className={styles.frontTopEdge} />
-        <div className={styles.frontBottomEdge} />
-
-        {/* 3. Back Cover Board (3D Hardcover Slab Volume) */}
-        <div className={styles.backCoverFace}>
-          <BackCover book={book} />
-        </div>
-        <div className={styles.backInsideFace} />
-        <div className={styles.backRightEdge} />
-        <div className={styles.backTopEdge} />
-        <div className={styles.backBottomEdge} />
-
-        {/* 4. Fore-Edge (Right page block at X = coverWidth - pagesOffset, facing +X) */}
-        <div className={styles.foreEdgeFacet} />
-
-        {/* 5. Top Page Edge (Top page block at Y = pagesOffset, facing -Y) */}
-        <div className={styles.topEdgeFacet} />
-
-        {/* 6. Bottom Page Edge (Bottom page block at Y = height - pagesOffset, facing +Y) */}
-        <div className={styles.bottomEdgeFacet} />
-
-        {/* 7. Page Block Endpapers (Solid Paper Core preventing hollow views during rotation) */}
-        <div className={styles.frontEndpaper} />
-        <div className={styles.backEndpaper} />
       </div>
     </div>
   );

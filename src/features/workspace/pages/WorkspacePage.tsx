@@ -32,10 +32,94 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     return book.content || createEmptyDocumentContent();
   });
 
+  // Global zoom state for both Document View and Book View
+  const [documentZoom, setDocumentZoom] = useState<number>(() => {
+    const saved = localStorage.getItem('booknote_document_zoom');
+    return saved ? parseFloat(saved) : 1.0;
+  });
+
+  const [bookViewZoom, setBookViewZoom] = useState<number>(() => {
+    const saved = localStorage.getItem('booknote_bookview_zoom');
+    return saved ? parseFloat(saved) : 1.0;
+  });
+
   // Sync if another book is opened
   useEffect(() => {
     setDocumentContent(book.content || createEmptyDocumentContent());
   }, [book.id]);
+
+  // Save zoom to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('booknote_document_zoom', String(documentZoom));
+  }, [documentZoom]);
+
+  useEffect(() => {
+    localStorage.setItem('booknote_bookview_zoom', String(bookViewZoom));
+  }, [bookViewZoom]);
+
+  // Zoom constants
+  const ZOOM_MIN = 0.6;
+  const ZOOM_MAX = 2.5;
+  const ZOOM_STEP = 0.2;
+
+  // Document View zoom handlers
+  const handleDocumentZoomIn = () => {
+    setDocumentZoom(z => Math.min(ZOOM_MAX, Number((z + ZOOM_STEP).toFixed(1))));
+  };
+
+  const handleDocumentZoomOut = () => {
+    setDocumentZoom(z => Math.max(ZOOM_MIN, Number((z - ZOOM_STEP).toFixed(1))));
+  };
+
+  const handleDocumentZoomReset = () => {
+    setDocumentZoom(1.0);
+  };
+
+  // Book View zoom handlers
+  const handleBookViewZoomIn = () => {
+    setBookViewZoom(z => Math.min(ZOOM_MAX, Number((z + ZOOM_STEP).toFixed(1))));
+  };
+
+  const handleBookViewZoomOut = () => {
+    setBookViewZoom(z => Math.max(ZOOM_MIN, Number((z - ZOOM_STEP).toFixed(1))));
+  };
+
+  const handleBookViewZoomReset = () => {
+    setBookViewZoom(1.0);
+  };
+
+  // Keyboard shortcuts for zoom
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === '=' || e.key === '+') {
+          e.preventDefault();
+          if (viewMode === 'document') {
+            handleDocumentZoomIn();
+          } else {
+            handleBookViewZoomIn();
+          }
+        } else if (e.key === '-') {
+          e.preventDefault();
+          if (viewMode === 'document') {
+            handleDocumentZoomOut();
+          } else {
+            handleBookViewZoomOut();
+          }
+        } else if (e.key === '0') {
+          e.preventDefault();
+          if (viewMode === 'document') {
+            handleDocumentZoomReset();
+          } else {
+            handleBookViewZoomReset();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewMode]);
 
   const handleUpdateContent = (newContent: JSONContent) => {
     setDocumentContent(newContent);
@@ -88,6 +172,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 <DocumentView
                   book={book}
                   content={documentContent}
+                  zoom={documentZoom}
+                  onZoomIn={handleDocumentZoomIn}
+                  onZoomOut={handleDocumentZoomOut}
+                  onZoomReset={handleDocumentZoomReset}
                   onUpdateContent={handleUpdateContent}
                   onUpdateTypography={handleUpdateTypography}
                 />
@@ -106,7 +194,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 book={book}
                 content={documentContent}
                 pageIndex={readerPageIndex}
+                zoom={bookViewZoom}
                 onPageIndexChange={setReaderPageIndex}
+                onZoomIn={handleBookViewZoomIn}
+                onZoomOut={handleBookViewZoomOut}
+                onZoomReset={handleBookViewZoomReset}
               />
             </motion.div>
           )}

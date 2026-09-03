@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpen, Plus, Search } from "lucide-react";
+import { BookOpen, Plus, Search, Sliders } from "lucide-react";
 import styles from "./LibraryHeader.module.css";
 import { Button } from "../../../components/ui/Button";
 
@@ -8,6 +8,7 @@ export interface LibraryHeaderProps {
   onNewBookClick: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  onSettingsClick?: () => void;
 }
 
 export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
@@ -15,6 +16,7 @@ export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   onNewBookClick,
   searchQuery,
   onSearchChange,
+  onSettingsClick,
 }) => {
   return (
     <header className={styles.header}>
@@ -31,6 +33,19 @@ export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
       </div>
 
       <div className={styles.actionsGroup}>
+        {/* Home Settings */}
+        {onSettingsClick && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Sliders size={15} />}
+            onClick={onSettingsClick}
+            aria-label="Home Settings"
+          >
+            Settings
+          </Button>
+        )}
+
         {/* Search Mockup */}
         <div className={styles.searchWrapper}>
           <Search size={15} className={styles.searchIcon} />

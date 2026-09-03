@@ -10,14 +10,22 @@ export interface BookViewPlaceholderProps {
   book: Book;
   content: JSONContent;
   pageIndex: number;
+  zoom: number;
   onPageIndexChange: (pageIndex: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onZoomReset: () => void;
 }
 
 export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
   book,
   content,
   pageIndex,
+  zoom,
   onPageIndexChange,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }) => {
   const palette = resolveCoverPalette(book.cover.paletteId);
 
@@ -37,7 +45,11 @@ export const BookViewPlaceholder: React.FC<BookViewPlaceholderProps> = ({
           book={book}
           content={content}
           pageIndex={pageIndex}
+          zoom={zoom}
           onPageIndexChange={onPageIndexChange}
+          onZoomIn={onZoomIn}
+          onZoomOut={onZoomOut}
+          onZoomReset={onZoomReset}
         />
       )}
     </div>

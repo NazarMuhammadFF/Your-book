@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallba
 import { createPortal } from "react-dom";
 import { Sliders } from "lucide-react";
 import styles from "./Bookshelf.module.css";
-import { Book as IBook } from "../../books/types/book";
+import { Book as IBook, getBookVisualThickness, getBookDimensions } from "../../books/types/book";
 import { ShelfRow } from "./ShelfRow";
 import { Book as DraggedBook } from "../../books/components/Book";
 import {
@@ -17,6 +17,8 @@ import {
   resolveDropPlacementX,
   BookPlacement,
   PackedShelfRow,
+  clearBookSupport,
+  cleanupPhysicsMemory,
 } from "../utils/shelfLayout";
 
 export interface BookshelfProps {
@@ -86,6 +88,9 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   // Unified Pointer Drag & Reorder State
   const [activeDrag, setActiveDrag] = useState<ActiveDrag | null>(null);
   const [isOverTrashState, setIsOverTrashState] = useState<boolean>(false);
+  // ponytail: ceiling = if user drags again before settle clears, last drop anim skipped.
+  // upgrade path: swap for ref + cancel-token pattern.
+  const [justDroppedBookId, setJustDroppedBookId] = useState<string | null>(null);
   const activeDragRef = useRef<ActiveDrag | null>(null);
   activeDragRef.current = activeDrag;
 
@@ -139,6 +144,10 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       }
       return updated;
     });
+    
+    // Cleanup orphaned physics memory entries when books change
+    const currentBookIds = new Set(books.map(b => b.id));
+    cleanupPhysicsMemory(currentBookIds);
   }, [books, containerWidth, externalPlacements, onPlacementsChange]);
 
   // If search filtering removes the active or returning book, safely reset it
@@ -231,6 +240,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     [containerWidth]
   );
 
+  // Auto-scroll during drag when pointer near viewport edges
+
   // Global Pointer Event Listeners for smooth drag tracking and drop
   useEffect(() => {
     if (!activeDrag || activeDrag.status !== "dragging") return;
@@ -261,6 +272,15 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
         el.style.transform = `translate3d(${e.clientX - current.grabOffsetX}px, ${
           e.clientY - current.grabOffsetY
         }px, 0)`;
+      }
+
+      // Auto-scroll when pointer near viewport top/bottom during drag
+      const SCROLL_MARGIN = 80;
+      const SCROLL_SPEED = 14;
+      if (e.clientY < SCROLL_MARGIN) {
+        window.scrollBy({ top: -SCROLL_SPEED, behavior: "auto" });
+      } else if (e.clientY > window.innerHeight - SCROLL_MARGIN) {
+        window.scrollBy({ top: SCROLL_SPEED, behavior: "auto" });
       }
 
       // Target placement, snapped & deduped so the shelf only re-renders when the
@@ -372,6 +392,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       }
 
       // Settle: glide to the slot via compositor-friendly transform transition
+      setJustDroppedBookId(current.book.id);
+      setTimeout(() => setJustDroppedBookId(null), BOOKSHELF_SETTLE_DURATION_MS + 750);
       setActiveDrag({ ...current, status: "settling" });
       const el = dragOverlayRef.current;
       if (el) {
@@ -445,15 +467,20 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
     book: IBook,
     clientX: number,
     clientY: number,
-    bookRect: DOMRect
+    _bookRect: DOMRect
   ) => {
     if (activeShelfBookId || returningBookId) return;
+
+    // Only clear dragged book's support — neighbors keep their lean state
+    clearBookSupport(book.id);
 
     const sourceIndex = books.findIndex((b) => b.id === book.id);
     if (sourceIndex === -1) return;
 
-    const grabOffsetX = clientX - bookRect.left;
-    const grabOffsetY = clientY - bookRect.top;
+    const visualThickness = getBookVisualThickness(book);
+    const visualHeight = getBookDimensions(book).height;
+    const grabOffsetX = visualThickness / 2;
+    const grabOffsetY = visualHeight / 2;
     const placement = placements[book.id] || { rowIndex: 0, x: 0 };
 
     livePointerRef.current = { x: clientX, y: clientY };
@@ -466,8 +493,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
       targetX: placement.x,
       grabOffsetX,
       grabOffsetY,
-      slotWidth: bookRect.width,
-      slotHeight: bookRect.height,
+      slotWidth: visualThickness,
+      slotHeight: visualHeight,
       status: "dragging",
     });
   };
@@ -568,18 +595,50 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
   };
 
   // Real-time drag preview target for live shelf space opening and dashed guide box.
-  // Kept active through settling/dropping too, so the reserved gap stays open until
-  // the reorder commit lands and the book materializes cleanly between its neighbors.
+  // Includes resolvedX so the guide box matches the exact landing spot (Guide-landing sync).
+  const resolvedDropX = useMemo(() => {
+    if (!activeDrag || activeDrag.status !== "dragging") return null;
+    const availableWidth = Math.max(320, containerWidth - 80);
+    const targetRowBooks = books.filter((b) => {
+      if (b.id === activeDrag.book.id) return false;
+      const p = placements[b.id];
+      return (p ? p.rowIndex : 0) === activeDrag.targetRowIndex;
+    });
+    // Mirror resolveDropPlacementX logic for real-time preview
+    const items = targetRowBooks
+      .map((b) => ({
+        x: Math.max(0, Math.min(availableWidth - getBookVisualThickness(b), placements[b.id]?.x ?? 0)),
+        thickness: getBookVisualThickness(b),
+      }))
+      .sort((a, b) => a.x - b.x);
+    const dropX = Math.max(0, Math.min(availableWidth - activeDrag.slotWidth, activeDrag.targetX));
+    let idx = items.findIndex((it) => it.x + it.thickness > dropX);
+    if (idx === -1) idx = items.length;
+    items.splice(idx, 0, { x: dropX, thickness: activeDrag.slotWidth });
+    // Forward pass
+    for (let i = 0; i < items.length - 1; i++) {
+      const minNextX = items[i].x + items[i].thickness + 2;
+      if (items[i + 1].x < minNextX) items[i + 1].x = minNextX;
+    }
+    // Backward cascade
+    for (let i = items.length - 1; i >= 0; i--) {
+      const limit = i < items.length - 1 ? items[i + 1].x - items[i].thickness - 2 : availableWidth - items[i].thickness;
+      if (items[i].x > limit) items[i].x = Math.max(0, limit);
+    }
+    const found = items.find((it) => it.x === dropX || (it.x > dropX && it.thickness === activeDrag.slotWidth));
+    return found?.x ?? dropX;
+  }, [activeDrag, books, placements, containerWidth]);
+
   const dragPreview = useMemo(() => {
     if (!activeDrag) return null;
     return {
       bookId: activeDrag.book.id,
       targetRowIndex: activeDrag.targetRowIndex,
-      targetX: activeDrag.targetX,
+      targetX: resolvedDropX ?? activeDrag.targetX,
       width: activeDrag.slotWidth,
       height: activeDrag.slotHeight,
     };
-  }, [activeDrag]);
+  }, [activeDrag, resolvedDropX]);
 
   // Multi-row shelf generation with free placements, dynamic zone heights, and collision safety
   const shelfRows = useMemo<PackedShelfRow[]>(
@@ -633,6 +692,7 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
               activeSide={activeSide}
               returningBookId={returningBookId}
               draggingBookId={activeDrag?.book.id || null}
+              justDroppedBookId={justDroppedBookId}
               isSettling={activeDrag?.status === "settling"}
               isDragTarget={isDragTarget}
               dragPlacementGuide={dragGuide}

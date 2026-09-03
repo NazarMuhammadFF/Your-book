@@ -8,7 +8,18 @@
   user-select: none;
   outline: none;
   touch-action: none;
-  transition: transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* 3D Mesh Wrapper: handles leaning/falling rotation & collision offset in 3D without rotating the 2D shelf contact shadow */
+.bookMeshWrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  touch-action: none;
+  transition: transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Shelf books inherit one perspective from BooksRow. Preview/cover contexts are
@@ -622,28 +633,27 @@
   backface-visibility: visible;
 }
 
-/* Contact shadow beneath book */
+/* Contact shadow beneath book on horizontal shelf surface */
 .shelfShadow {
   position: absolute;
-  bottom: -4px;
-  left: -2px;
-  width: calc(var(--book-thickness, 44px) + 4px);
-  height: 8px;
+  bottom: -2px;
+  height: 6px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    rgba(20, 14, 8, 0.45) 0%,
-    rgba(20, 14, 8, 0.12) 60%,
-    transparent 80%
+    rgba(20, 14, 8, var(--lean-shadow-opacity, 0.45)) 0%,
+    rgba(20, 14, 8, 0.12) 65%,
+    transparent 85%
   );
-  filter: blur(2px);
+  filter: blur(1.5px);
   pointer-events: none;
-  transition: all var(--motion-normal) var(--ease-out);
+  transition: left 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.48s ease-out;
 }
 
-.stowed:hover + .shelfShadow {
-  transform: scale(1.12) translateX(-3px);
-  opacity: 0.65;
+.interactive:hover .shelfShadow {
+  opacity: 0.6;
 }
 
 /* Reduced Motion Fallback */

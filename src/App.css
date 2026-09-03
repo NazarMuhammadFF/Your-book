@@ -19,6 +19,28 @@ body {
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
   user-select: none;
+  /* Custom pencil cursor with white outline for visibility on light backgrounds */
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='white' stroke-width='4'/%3E%3Cpath d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='%23463C34' stroke-width='2'/%3E%3Cpath d='m15 5 4 4' stroke='white' stroke-width='4'/%3E%3Cpath d='m15 5 4 4' stroke='%23463C34' stroke-width='2'/%3E%3C/svg%3E") 2 22, auto;
+}
+
+/* Pointer cursor for interactive elements */
+button,
+a,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+select {
+  cursor: pointer;
+}
+
+/* Text cursor for text inputs */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+textarea,
+[contenteditable="true"] {
+  cursor: text;
 }
 
 #root {

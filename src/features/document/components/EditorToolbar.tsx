@@ -15,6 +15,9 @@ import {
   Redo2,
   Columns2,
   Rows3,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from "lucide-react";
 import { Book, BookTypography, FONT_SIZE_OPTIONS } from "../../books/types/book";
 import { FONT_FAMILIES } from "../../../design/typography";
@@ -24,6 +27,10 @@ export interface EditorToolbarProps {
   editor: Editor | null;
   book: Book;
   layoutMode?: "vertical" | "spread";
+  zoom?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
   onToggleLayoutMode?: () => void;
   onUpdateTypography: (newTypography: BookTypography) => void;
   onOpenImageDialog?: () => void;
@@ -34,6 +41,10 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   editor,
   book,
   layoutMode = "vertical",
+  zoom,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
   onToggleLayoutMode,
   onUpdateTypography,
   onOpenImageDialog,
@@ -366,6 +377,51 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
               aria-label="Toggle Page Layout"
             >
               {layoutMode === "spread" ? <Rows3 size={14} /> : <Columns2 size={14} />}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* 7. Zoom Controls */}
+      {zoom !== undefined && onZoomIn && onZoomOut && onZoomReset && (
+        <>
+          <div className={styles.separator} />
+          <div className={styles.group}>
+            <button
+              type="button"
+              className={styles.toolBtn}
+              onClick={onZoomOut}
+              disabled={zoom <= 0.6}
+              title="Zoom Out (Ctrl + -)"
+              aria-label="Zoom Out"
+            >
+              <ZoomOut size={16} />
+            </button>
+            
+            <span className={styles.zoomDisplay}>
+              {Math.round(zoom * 100)}%
+            </span>
+            
+            <button
+              type="button"
+              className={styles.toolBtn}
+              onClick={onZoomIn}
+              disabled={zoom >= 2.5}
+              title="Zoom In (Ctrl + +)"
+              aria-label="Zoom In"
+            >
+              <ZoomIn size={16} />
+            </button>
+            
+            <button
+              type="button"
+              className={styles.toolBtn}
+              onClick={onZoomReset}
+              disabled={zoom === 1.0}
+              title="Reset Zoom (Ctrl + 0)"
+              aria-label="Reset Zoom"
+            >
+              <RotateCcw size={16} />
             </button>
           </div>
         </>

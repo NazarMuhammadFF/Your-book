@@ -78,9 +78,9 @@
 }
 
 .controls {
-  display: grid;
-  grid-template-columns: 110px minmax(150px, auto) 110px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   margin-top: 16px;
   padding: 4px;
@@ -95,6 +95,31 @@
 .controls button:disabled {
   cursor: not-allowed;
   opacity: 0.35;
+}
+
+/* Zoom controls group */
+.zoomGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  border-left: 1px solid var(--border-subtle);
+  border-right: 1px solid var(--border-subtle);
+}
+
+.zoomLevel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-canvas-subtle) 60%, transparent);
+  border-radius: var(--radius-sm);
+  user-select: none;
 }
 
 .status {

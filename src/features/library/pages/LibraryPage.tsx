@@ -7,6 +7,7 @@ import { Bookshelf } from "../components/Bookshelf";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { TrashBinWidget } from "../components/TrashBinWidget";
 import { TrashDrawerModal } from "../components/TrashDrawerModal";
+import { HomeSettingsModal, HomeColors, loadHomeColors } from "../components/HomeSettingsModal";
 
 import { BookPlacement } from "../utils/shelfLayout";
 
@@ -45,6 +46,18 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [isDragOverTrash, setIsDragOverTrash] = useState(false);
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [homeColors, setHomeColors] = useState<HomeColors>(loadHomeColors);
+
+  // Set body background transparent when image is active so bgLayer shows through
+  useEffect(() => {
+    if (homeColors.bgImage) {
+      document.body.style.backgroundColor = "transparent";
+    } else {
+      document.body.style.backgroundColor = "";
+    }
+    return () => { document.body.style.backgroundColor = ""; };
+  }, [homeColors.bgImage]);
 
   // Books matching the search query, in shelf order. The shelf always shows ALL
   // books; matches are highlighted with a dashed outline instead of being filtered.
@@ -94,7 +107,26 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   };
 
   return (
-    <div className={styles.pageContainer}>
+    <div
+      className={styles.pageContainer}
+      style={{
+        backgroundColor: homeColors.bgImage ? "transparent" : homeColors.bgColor,
+        "--shelf-surface": homeColors.shelfSurface,
+        "--shelf-face": homeColors.shelfFace,
+      } as React.CSSProperties}
+    >
+      {/* Fixed background image layer — object-fit: cover + object-position for crop */}
+      {homeColors.bgImage && (
+        <div className={styles.bgLayer}>
+          <img
+            src={homeColors.bgImage}
+            alt=""
+            className={styles.bgImage}
+            style={{ objectPosition: `${homeColors.bgCropX}% ${homeColors.bgCropY}%` }}
+            draggable={false}
+          />
+        </div>
+      )}
       {/* Top Library Header Bar */}
       <LibraryHeader
         bookCount={books.length}
@@ -104,6 +136,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           setEditingBook(null);
           setIsCreateModalOpen(true);
         }}
+        onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
       {/* Match navigation pill: cycles through matching books across shelf rows */}
@@ -213,6 +246,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           }}
         />
       )}
+
+      {/* Home Settings Modal */}
+      <HomeSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        colors={homeColors}
+        onColorsChange={setHomeColors}
+      />
     </div>
   );
 };
