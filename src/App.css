@@ -53,12 +53,14 @@ textarea,
 .app-root {
   width: 100%;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  /* Grid: layar yang sedang keluar dan masuk menempati sel yang sama (crossfade). */
+  display: grid;
+  grid-template: 1fr / 1fr;
   position: relative;
 }
 
 .screen-container {
+  grid-area: 1 / 1;
   width: 100%;
   min-height: 100vh;
   display: flex;

@@ -49,6 +49,7 @@ declare module "react-pageflip" {
     onFlip?: (e: FlipEvent) => void;
     onChangeOrientation?: (e: { data: string }) => void;
     onChangeState?: (e: StateChangeEvent) => void;
+    onInit?: (e: { data: unknown; object: PageFlip }) => void;
     ref?: React.Ref<FlipBookRef>;
   }
 

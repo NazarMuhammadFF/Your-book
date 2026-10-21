@@ -1,5 +1,5 @@
 import React from "react";
-import { BookOpen, Plus, Search, Sliders } from "lucide-react";
+import { BookOpen, DatabaseBackup, Plus, Search, Sliders } from "lucide-react";
 import styles from "./LibraryHeader.module.css";
 import { Button } from "../../../components/ui/Button";
 
@@ -9,6 +9,7 @@ export interface LibraryHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onSettingsClick?: () => void;
+  onBackupClick?: () => void;
 }
 
 export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
@@ -17,6 +18,7 @@ export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
   searchQuery,
   onSearchChange,
   onSettingsClick,
+  onBackupClick,
 }) => {
   return (
     <header className={styles.header}>
@@ -33,6 +35,18 @@ export const LibraryHeader: React.FC<LibraryHeaderProps> = ({
       </div>
 
       <div className={styles.actionsGroup}>
+        {onBackupClick && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<DatabaseBackup size={15} />}
+            onClick={onBackupClick}
+            aria-label="Backup & Pulihkan"
+          >
+            Backup
+          </Button>
+        )}
+
         {/* Home Settings */}
         {onSettingsClick && (
           <Button

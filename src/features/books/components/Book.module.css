@@ -107,6 +107,7 @@
 /* 2b. Extracted (Direct interactive 3D inspection in foreground) */
 .extracted {
   left: calc((var(--book-thickness, 44px) - var(--cover-width, 165px)) / 2);
+  will-change: auto; /* re-raster at zoom scale instead of upscaling a cached bitmap */
   transform-origin: 50% 50% 0px;
   cursor: pointer;
   user-select: none;
@@ -387,9 +388,9 @@
 .frontRightEdge {
   position: absolute;
   right: 0;
-  top: 0;
+  top: var(--corner-r, 8px);
   width: var(--cover-thickness, 3px);
-  height: 100%;
+  height: calc(100% - 2 * var(--corner-r, 8px));
   transform-origin: right center;
   transform: translateZ(calc(var(--book-thickness, 44px) / 2)) rotateY(-90deg);
   background: var(--book-spine-color, #283b54);
@@ -405,7 +406,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
+  width: calc(100% - var(--corner-r, 8px));
   height: var(--cover-thickness, 3px);
   transform-origin: center top;
   transform: translateZ(calc(var(--book-thickness, 44px) / 2)) rotateX(-90deg);
@@ -420,7 +421,7 @@
   position: absolute;
   left: 0;
   bottom: 0;
-  width: 100%;
+  width: calc(100% - var(--corner-r, 8px));
   height: var(--cover-thickness, 3px);
   transform-origin: center bottom;
   transform: translateZ(calc(var(--book-thickness, 44px) / 2)) rotateX(90deg);
@@ -470,9 +471,9 @@
 .backRightEdge {
   position: absolute;
   right: 0;
-  top: 0;
+  top: var(--corner-r, 8px);
   width: var(--cover-thickness, 3px);
-  height: 100%;
+  height: calc(100% - 2 * var(--corner-r, 8px));
   transform-origin: right center;
   transform: translateZ(calc(-1 * var(--book-thickness, 44px) / 2))
     rotateY(90deg);
@@ -489,7 +490,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
+  width: calc(100% - var(--corner-r, 8px));
   height: var(--cover-thickness, 3px);
   transform-origin: center top;
   transform: translateZ(calc(-1 * var(--book-thickness, 44px) / 2))
@@ -505,7 +506,7 @@
   position: absolute;
   left: 0;
   bottom: 0;
-  width: 100%;
+  width: calc(100% - var(--corner-r, 8px));
   height: var(--cover-thickness, 3px);
   transform-origin: center bottom;
   transform: translateZ(calc(-1 * var(--book-thickness, 44px) / 2))
@@ -514,6 +515,17 @@
   background-image: var(--book-spine-grad);
   box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.4);
   backface-visibility: visible;
+}
+
+/* Corner fillets: faceted strips that follow the rounded fore-edge corners of the
+   cover boards, so the board thickness stays closed where the face is rounded
+   (the straight rims are shortened by --corner-r to stop where the curve begins). */
+.cornerFillet {
+  position: absolute;
+  background: var(--book-spine-color, #283b54);
+  background-image: var(--book-spine-grad);
+  backface-visibility: visible;
+  pointer-events: none;
 }
 
 /* ==========================================================================

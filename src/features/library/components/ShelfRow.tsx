@@ -64,8 +64,17 @@ export const ShelfRow: React.FC<ShelfRowProps> = ({
           tallThinScore: 0,
         }));
 
+  // Setiap .booksRow membentuk stacking context sendiri (perspective + z-index), dan baris
+  // yang lebih bawah dicat belakangan. Tanpa ini, buku aktif/diperbesar di baris atas
+  // tertutup buku di baris bawah. Angkat seluruh baris yang berisi buku aktif atau yang
+  // sedang kembali ke rak di atas baris lain.
+  const hasRaisedBook = slotItems.some(
+    (s) => s.book.id === activeBookId || s.book.id === returningBookId
+  );
+
   return (
     <div
+      style={hasRaisedBook ? { zIndex: 30 } : undefined}
       className={`${styles.shelfRow} ${isEmptyContinuation ? styles.emptyShelfRow : ""} ${isDragTarget ? styles.activeTargetShelfRow : ""}`}
       data-shelf-row-index={rowIndex}
       data-shelf-row-start={startIndex}

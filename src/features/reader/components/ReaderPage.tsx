@@ -13,6 +13,7 @@ export interface ReaderPageProps {
   runningTitle?: string;
   isEndCover?: boolean;
   scale?: number;
+  side?: "left" | "right";
 }
 
 export function renderInlineMarks(text: string, marks?: Array<{ type: string; attrs?: Record<string, any> }>): React.ReactNode {
@@ -191,8 +192,8 @@ export function renderNodeContent(node: JSONContent, index: number): React.React
 }
 
 export const ReaderPage = React.forwardRef<HTMLDivElement, ReaderPageProps>(
-  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover }, ref) => {
-    const side = pageNumber % 2 === 1 ? "left" : "right";
+  ({ book, pageNumber, totalPages, runningTitle, nodes, isEndCover, side: sideProp }, ref) => {
+    const side = sideProp ?? (pageNumber % 2 === 1 ? "left" : "right");
     const pageMetrics = getBookPageMetrics(book);
 
     return (
@@ -215,7 +216,7 @@ export const ReaderPage = React.forwardRef<HTMLDivElement, ReaderPageProps>(
           runningTitle={runningTitle}
           isEndCover={isEndCover}
           side={side}
-          showGutterShadow={true}
+          showGutterShadow={false} /* the spine shadow is one fixed overlay in BookFlipView */
           style={{
             width: `${pageMetrics.pageWidth}px`,
             height: `${pageMetrics.pageHeight}px`,

@@ -7,6 +7,7 @@ import { Bookshelf } from "../components/Bookshelf";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { TrashBinWidget } from "../components/TrashBinWidget";
 import { TrashDrawerModal } from "../components/TrashDrawerModal";
+import { BackupModal, ImportOutcome } from "../components/BackupModal";
 import { HomeSettingsModal, HomeColors, loadHomeColors } from "../components/HomeSettingsModal";
 
 import { BookPlacement } from "../utils/shelfLayout";
@@ -24,6 +25,9 @@ export interface LibraryPageProps {
   onRestoreBook: (bookId: string) => void;
   onDeletePermanently: (bookId: string) => void;
   onEmptyTrash: () => void;
+  totalBookCount: number;
+  onExportBackup: () => void;
+  onImportBackup: (fileText: string) => ImportOutcome;
 }
 
 export const LibraryPage: React.FC<LibraryPageProps> = ({
@@ -39,6 +43,9 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   onRestoreBook,
   onDeletePermanently,
   onEmptyTrash,
+  totalBookCount,
+  onExportBackup,
+  onImportBackup,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -47,6 +54,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
   const [isDragOverTrash, setIsDragOverTrash] = useState(false);
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [homeColors, setHomeColors] = useState<HomeColors>(loadHomeColors);
 
   // Set body background transparent when image is active so bgLayer shows through
@@ -137,6 +145,7 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           setIsCreateModalOpen(true);
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
+        onBackupClick={() => setIsBackupOpen(true)}
       />
 
       {/* Match navigation pill: cycles through matching books across shelf rows */}
@@ -246,6 +255,14 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({
           }}
         />
       )}
+
+      <BackupModal
+        isOpen={isBackupOpen}
+        onClose={() => setIsBackupOpen(false)}
+        bookCount={totalBookCount}
+        onExport={onExportBackup}
+        onImport={onImportBackup}
+      />
 
       {/* Home Settings Modal */}
       <HomeSettingsModal

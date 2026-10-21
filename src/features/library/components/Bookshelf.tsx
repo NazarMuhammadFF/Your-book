@@ -773,6 +773,8 @@ export const Bookshelf: React.FC<BookshelfProps> = ({
             <span>Drag horizontally to flip</span>
             <span className={styles.hintDot}>•</span>
             <span>Drag down or click outside to return</span>
+            <span className={styles.hintDot}>•</span>
+            <span>Pinch to zoom</span>
 
             {onEditBook && (
               <button

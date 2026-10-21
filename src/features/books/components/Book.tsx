@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import styles from "./Book.module.css";
 import { Book as IBook, getBookDimensions } from "../types/book";
 import { BookCover } from "./BookCover";
@@ -159,6 +160,106 @@ export const Book: React.FC<BookProps> = ({
   const holdTimerRef = useRef<number | null>(null);
   const stowedPointerStartRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
   const suppressNextClickRef = useRef<boolean>(false);
+
+  // Pinch-to-zoom (touchpad dua jari) untuk memperbesar buku yang sedang diinspeksi.
+  // Di Chromium/WebView2 gestur pinch touchpad dikirim sebagai wheel event dengan ctrlKey=true.
+  const [inspectZoom, setInspectZoom] = useState<number>(1);
+  const inspectZoomRef = useRef<number>(1);
+  inspectZoomRef.current = inspectZoom;
+  const [debugEvent, setDebugEvent] = useState<string>("");
+  const INSPECT_ZOOM_MIN = 1;
+  const INSPECT_ZOOM_MAX = 2.4;
+
+  useEffect(() => {
+    if (!isActive || mode !== "shelf") {
+      setInspectZoom(1);
+      return;
+    }
+
+    const clampZoom = (z: number) =>
+      Math.min(INSPECT_ZOOM_MAX, Math.max(INSPECT_ZOOM_MIN, z));
+
+    const handleWheel = (e: WheelEvent) => {
+      setDebugEvent(`wheel ctrl=${e.ctrlKey ? "ya" : "tidak"} dY=${e.deltaY.toFixed(1)}`);
+      if (!e.ctrlKey) return; // wheel biasa (scroll) dibiarkan
+      e.preventDefault(); // cegah zoom seluruh halaman oleh WebView
+      e.stopPropagation();
+      // Pinch-out (deltaY < 0) membesar, pinch-in mengecil; eksponensial agar terasa halus.
+      const factor = Math.exp(-e.deltaY * 0.02);
+      setInspectZoom((z) => clampZoom(z * factor));
+    };
+
+    // Cadangan: event gesture (WebKit/Safari) dan sentuhan dua jari di layar sentuh.
+    let gestureStartZoom = 1;
+    const handleGestureStart = (e: Event) => {
+      e.preventDefault();
+      gestureStartZoom = inspectZoomRef.current;
+      setDebugEvent("gesturestart");
+    };
+    const handleGestureChange = (e: Event) => {
+      e.preventDefault();
+      const scale = (e as unknown as { scale?: number }).scale ?? 1;
+      setInspectZoom(clampZoom(gestureStartZoom * scale));
+      setDebugEvent(`gesturechange scale=${scale.toFixed(2)}`);
+    };
+
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+    const touchDist = (t: TouchList) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = touchDist(e.touches);
+        pinchStartZoom = inspectZoomRef.current;
+        setDebugEvent("touch 2 jari");
+      }
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        e.preventDefault();
+        setInspectZoom(clampZoom(pinchStartZoom * (touchDist(e.touches) / pinchStartDist)));
+      }
+    };
+    const handleTouchEnd = () => {
+      pinchStartDist = 0;
+    };
+
+    // Tombol +/-/0 (dengan atau tanpa Ctrl) untuk zoom lewat keyboard / pengujian.
+    const handleKey = (e: KeyboardEvent) => {
+      const tag = (document.activeElement?.tagName || "").toUpperCase();
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "0") {
+        e.preventDefault();
+        setInspectZoom(1);
+      } else if (e.key === "=" || e.key === "+") {
+        e.preventDefault();
+        setInspectZoom((z) => Math.min(INSPECT_ZOOM_MAX, z * 1.2));
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        setInspectZoom((z) => Math.max(INSPECT_ZOOM_MIN, z / 1.2));
+      }
+    };
+
+    // passive:false wajib agar preventDefault berlaku; capture:true agar tidak
+    // terhalang elemen lain yang menghentikan propagasi event.
+    const opts = { passive: false, capture: true } as const;
+    window.addEventListener("wheel", handleWheel, opts);
+    window.addEventListener("keydown", handleKey);
+    window.addEventListener("gesturestart", handleGestureStart, opts);
+    window.addEventListener("gesturechange", handleGestureChange, opts);
+    window.addEventListener("touchstart", handleTouchStart, opts);
+    window.addEventListener("touchmove", handleTouchMove, opts);
+    window.addEventListener("touchend", handleTouchEnd, opts);
+    return () => {
+      window.removeEventListener("wheel", handleWheel, opts);
+      window.removeEventListener("keydown", handleKey);
+      window.removeEventListener("gesturestart", handleGestureStart, opts);
+      window.removeEventListener("gesturechange", handleGestureChange, opts);
+      window.removeEventListener("touchstart", handleTouchStart, opts);
+      window.removeEventListener("touchmove", handleTouchMove, opts);
+      window.removeEventListener("touchend", handleTouchEnd, opts);
+    };
+  }, [isActive, mode]);
 
   // Sync angle when activeSide prop updates externally (e.g. keyboard shortcuts)
   useEffect(() => {
@@ -405,7 +506,7 @@ export const Book: React.FC<BookProps> = ({
       transformStyle = undefined;
     } else {
       stateClass = `${styles.extracted} ${isDragging ? styles.extractedDragging : styles.extractedSettled}`;
-      transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 140px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg)`;
+      transformStyle = `translateX(${edgeCompensationX}px) translateY(${dragOffsetY}px) translateZ(var(--book-extract-z, 140px)) rotateY(${rotationY}deg) rotateX(${rotationX}deg) scale3d(${inspectZoom}, ${inspectZoom}, ${inspectZoom})`;
     }
   } else if (isLifted) {
     stateClass = styles.lifted;
@@ -467,6 +568,43 @@ export const Book: React.FC<BookProps> = ({
       ? "100% 100%"
       : "50% 100%";
 
+  // Rounded fore-edge corners: the cover faces use `--radius-book-cover` (8px on the right
+  // corners). The straight board rims stop where the curve starts, and these strips follow
+  // the arc so the board thickness stays closed at all four right-hand corners.
+  const CORNER_R = 8; // keep in sync with the right-hand radius of --radius-book-cover
+  const FILLET_SEGMENTS = 3;
+  const filletStrips: React.CSSProperties[] = [];
+  {
+    const W = width * scale;
+    const H = height * scale;
+    const c = coverThickness * scale;
+    const zFront = (thickness * scale) / 2 - c / 2;
+    const step = 90 / FILLET_SEGMENTS;
+    const corners = [
+      { cx: W - CORNER_R, cy: CORNER_R, a0: -90 }, // top-right
+      { cx: W - CORNER_R, cy: H - CORNER_R, a0: 0 }, // bottom-right
+    ];
+    for (const z of [zFront, -zFront]) {
+      for (const { cx, cy, a0 } of corners) {
+        for (let k = 0; k < FILLET_SEGMENTS; k++) {
+          const mid = ((a0 + k * step + step / 2) * Math.PI) / 180;
+          const half = (step / 2) * (Math.PI / 180);
+          const r = CORNER_R * Math.cos(half); // chord midpoint radius
+          const chord = 2 * CORNER_R * Math.sin(half) * 1.1; // slight overlap, no hairlines
+          const mx = cx + r * Math.cos(mid);
+          const my = cy + r * Math.sin(mid);
+          filletStrips.push({
+            left: mx - chord / 2,
+            top: my - c / 2,
+            width: chord,
+            height: c,
+            transform: `translateZ(${z}px) rotate(${a0 + k * step + step / 2 + 90}deg) rotateX(90deg)`,
+          });
+        }
+      }
+    }
+  }
+
   return (
     <div
       role={mode === "shelf" && isInteractive && !isGhost ? "button" : undefined}
@@ -516,6 +654,31 @@ export const Book: React.FC<BookProps> = ({
         } as React.CSSProperties
       }
     >
+      {/* Indikator zoom inspeksi (juga tanda bahwa kode zoom sudah termuat) */}
+      {isActive && mode === "shelf" && !isExtracting &&
+        createPortal(
+          <div
+            aria-live="polite"
+            style={{
+              position: "fixed",
+              top: 64,
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1000000,
+              padding: "4px 12px",
+              borderRadius: 999,
+              background: "rgba(20,16,12,0.78)",
+              color: "#f3e9d8",
+              font: "500 12px var(--font-sans, system-ui)",
+              pointerEvents: "none",
+            }}
+          >
+            Zoom {Math.round(inspectZoom * 100)}% · tekan + / − / 0
+            {debugEvent ? ` · event terakhir: ${debugEvent}` : " · belum ada event gestur"}
+          </div>,
+          document.body
+        )}
+
       {/* Contact shadow cast beneath book horizontally on the shelf plane */}
       {mode === "shelf" && !isLifted && !isGhost && (
         <div
@@ -595,6 +758,9 @@ export const Book: React.FC<BookProps> = ({
           <div className={styles.backRightEdge} />
           <div className={styles.backTopEdge} />
           <div className={styles.backBottomEdge} />
+          {filletStrips.map((style, i) => (
+            <div key={i} className={styles.cornerFillet} style={style} />
+          ))}
 
           {/* 4. Fore-Edge (Right page block at X = coverWidth - pagesOffset, facing +X) */}
           <div className={styles.foreEdgeFacet} />

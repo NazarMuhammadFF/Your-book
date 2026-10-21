@@ -29,4 +29,28 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "motion/react"],
+          "vendor-tiptap": [
+            "@tiptap/react",
+            "@tiptap/starter-kit",
+            "@tiptap/extension-color",
+            "@tiptap/extension-highlight",
+            "@tiptap/extension-image",
+            "@tiptap/extension-placeholder",
+            "@tiptap/extension-task-item",
+            "@tiptap/extension-task-list",
+            "@tiptap/extension-text-align",
+            "@tiptap/extension-text-style",
+            "@tiptap/extension-underline",
+          ],
+          "vendor-pdf": ["pdfjs-dist"],
+          "vendor-pageflip": ["page-flip", "react-pageflip"],
+        },
+      },
+    },
+  },
 }));

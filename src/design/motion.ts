@@ -56,6 +56,11 @@ export const transitions = {
     duration: 0.22,
     ease: [0.2, 0.8, 0.2, 1],
   },
+  // Crossfade library <-> workspace (kedua layar tampil bersamaan, tanpa layar kosong)
+  screenCrossfade: {
+    duration: 0.32,
+    ease: [0.4, 0, 0.2, 1],
+  },
   readerFlip: {
     duration: READER_FLIP_DURATION_MS / 1000,
   },
@@ -92,3 +97,4 @@ export const motionVariants = {
     },
   },
 };
+  

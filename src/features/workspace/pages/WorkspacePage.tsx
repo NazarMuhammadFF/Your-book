@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import styles from "./WorkspacePage.module.css";
 import { Book, BookTypography } from "../../books/types/book";
 import { WorkspaceViewMode } from "../../../types/navigation";
 import { WorkspaceHeader } from "../components/WorkspaceHeader";
-import { DocumentView } from "../components/DocumentView";
-import { PDFDocumentViewer } from "../../reader/components/PDFDocumentViewer";
-import { BookViewPlaceholder } from "../components/BookViewPlaceholder";
 import { BookSettingsModal } from "../../books/components/CreateBookModal";
 import { transitions } from "../../../design/motion";
-import { JSONContent } from "@tiptap/react";
+import type { JSONContent } from "@tiptap/react";
 import { createEmptyDocumentContent } from "../../document/utils/initialContent";
+
+const DocumentView = lazy(() =>
+  import("../components/DocumentView").then((m) => ({ default: m.DocumentView }))
+);
+const PDFDocumentViewer = lazy(() =>
+  import("../../reader/components/PDFDocumentViewer").then((m) => ({
+    default: m.PDFDocumentViewer,
+  }))
+);
+const BookViewPlaceholder = lazy(() =>
+  import("../components/BookViewPlaceholder").then((m) => ({
+    default: m.BookViewPlaceholder,
+  }))
+);
 
 export interface WorkspacePageProps {
   book: Book;
@@ -166,20 +177,22 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               exit={{ opacity: 0, y: -8 }}
               transition={transitions.fast}
             >
-              {book.format === "pdf" ? (
-                <PDFDocumentViewer book={book} />
-              ) : (
-                <DocumentView
-                  book={book}
-                  content={documentContent}
-                  zoom={documentZoom}
-                  onZoomIn={handleDocumentZoomIn}
-                  onZoomOut={handleDocumentZoomOut}
-                  onZoomReset={handleDocumentZoomReset}
-                  onUpdateContent={handleUpdateContent}
-                  onUpdateTypography={handleUpdateTypography}
-                />
-              )}
+              <Suspense fallback={<div className={styles.viewPane} />}>
+                {book.format === "pdf" ? (
+                  <PDFDocumentViewer book={book} />
+                ) : (
+                  <DocumentView
+                    book={book}
+                    content={documentContent}
+                    zoom={documentZoom}
+                    onZoomIn={handleDocumentZoomIn}
+                    onZoomOut={handleDocumentZoomOut}
+                    onZoomReset={handleDocumentZoomReset}
+                    onUpdateContent={handleUpdateContent}
+                    onUpdateTypography={handleUpdateTypography}
+                  />
+                )}
+              </Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -190,16 +203,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               exit={{ opacity: 0 }}
               transition={transitions.fast}
             >
-              <BookViewPlaceholder
-                book={book}
-                content={documentContent}
-                pageIndex={readerPageIndex}
-                zoom={bookViewZoom}
-                onPageIndexChange={setReaderPageIndex}
-                onZoomIn={handleBookViewZoomIn}
-                onZoomOut={handleBookViewZoomOut}
-                onZoomReset={handleBookViewZoomReset}
-              />
+              <Suspense fallback={<div className={styles.viewPane} />}>
+                <BookViewPlaceholder
+                  book={book}
+                  content={documentContent}
+                  pageIndex={readerPageIndex}
+                  zoom={bookViewZoom}
+                  onPageIndexChange={setReaderPageIndex}
+                  onZoomIn={handleBookViewZoomIn}
+                  onZoomOut={handleBookViewZoomOut}
+                  onZoomReset={handleBookViewZoomReset}
+                />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

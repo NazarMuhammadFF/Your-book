@@ -29,15 +29,81 @@
   padding: 10px 14px 14px 14px;
   box-sizing: border-box;
   overflow: visible; /* Must be visible so the 3D flipping page arc is not clipped */
-  background: var(--reader-cover-trim, #223447);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  box-shadow:
-    0 36px 80px -20px rgba(0, 0, 0, 0.65),
-    0 14px 32px -8px rgba(0, 0, 0, 0.48),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
   outline: none;
   flex-shrink: 0;
+}
+
+/* The binding behind the pages, in two halves that live inside .bookShift (so they slide
+   with the book). Each half is only drawn where no cover board is carrying that side; the
+   boards themselves are part of the hard leaves (see .board), so they lift with the cover. */
+.trimLeft,
+.trimRight {
+  position: absolute;
+  top: -10px;
+  bottom: -14px;
+  background: var(--reader-cover-trim, #223447);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 28px 60px -20px rgba(0, 0, 0, 0.55),
+    0 10px 24px -8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.trimLeft {
+  left: -14px;
+  right: 50%;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+
+.trimRight {
+  left: 50%;
+  right: -14px;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+.trimLeft[data-visible],
+.trimRight[data-visible] {
+  opacity: 1;
+}
+
+/* Visible, predictable cursor over the pages: open hand to flip, closed hand while dragging */
+.hardcoverWrapper,
+.hardcoverWrapper * {
+  cursor: grab;
+}
+
+.hardcoverWrapper[data-flip-state="user_fold"],
+.hardcoverWrapper[data-flip-state="user_fold"] * {
+  cursor: grabbing;
+}
+
+/* Fixed gutter shadow across the spine: constant while pages turn, so it never flickers.
+   Slightly darker at the crease, fading out evenly on both pages. Injected into
+   page-flip's .stf__block (see BookFlipView.tsx), so it fills the two-page spread. */
+.spineShadow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 76px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 4; /* above resting (1) and revealed (3) pages, below the turning page (5) */
+  mix-blend-mode: multiply;
+  background: linear-gradient(
+    90deg,
+    rgba(30, 20, 10, 0) 0%,
+    rgba(30, 20, 10, 0.05) 30%,
+    rgba(30, 20, 10, 0.13) 47%,
+    rgba(30, 20, 10, 0.16) 50%,
+    rgba(30, 20, 10, 0.13) 53%,
+    rgba(30, 20, 10, 0.05) 70%,
+    rgba(30, 20, 10, 0) 100%
+  );
 }
 
 .hardcoverWrapper:focus-visible {
@@ -71,10 +137,87 @@
   box-sizing: border-box;
 }
 
-.coverPage > div {
+.flipPage.coverPage {
+  overflow: visible;
+}
+
+.coverScaler {
+  transform-origin: 0 0;
+}
+
+.coverScaler > div {
   width: 100% !important;
   height: 100% !important;
   border-radius: 0 !important;
+}
+
+.endpaper {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(rgba(252, 250, 246, 0.82), rgba(252, 250, 246, 0.82)),
+    var(--endpaper-bg, #283b54);
+}
+
+/* Slides the whole spread so a closed book (one cover showing) sits centred */
+.bookShift {
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+/* A hard cover board: this face overhangs the pages (top 10, bottom 14, outer side 14) so the
+   binding is part of the leaf and swings up with it. It sits behind the face's own paper, so
+   only the overhang shows. */
+.flipPage.boardPage {
+  overflow: visible;
+}
+
+/* page-flip's leaves are preserve-3d: a parent's backface-visibility does not hide its
+   children, so the face of a hard leaf that points away (e.g. the back cover seen through the
+   inside-back-cover while that leaf lifts) showed up mirrored. Hide each child's back side
+   itself, like PageCanvas already does for interior pages. */
+.flipPage > * {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.board {
+  position: absolute;
+  top: -10px;
+  bottom: -14px;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  background: var(--reader-cover-trim, #223447);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+.board[data-outer="left"] {
+  left: -14px;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+}
+
+.board[data-outer="right"] {
+  right: -14px;
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Closed book: the board casts the book's shadow */
+.hardcoverWrapper[data-closed] .board {
+  box-shadow: 0 30px 50px -18px rgba(0, 0, 0, 0.6), 0 10px 20px -8px rgba(0, 0, 0, 0.4);
+}
+
+.spineShadow {
+  transition: opacity 0.3s ease;
+}
+
+.hardcoverWrapper[data-closed] .spineShadow {
+  opacity: 0;
 }
 
 .controls {
